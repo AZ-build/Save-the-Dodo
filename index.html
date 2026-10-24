@@ -2547,9 +2547,17 @@ function readPush(out) {
   // (v0.9 locked the mapping while the follow-cam swung round, so after half a second of holding
   // a key he was walking 60-90 degrees away from it. The camera no longer turns while you steer.)
   const L = INLOCK, m = Math.hypot(x, z);
+  // Follow cam ON: the camera swings round behind him while you hold a direction. So that the swing
+  // doesn't steer him in circles, a direction you're HOLDING stays pinned to the world (he keeps running
+  // straight while the camera comes round behind). The moment you point somewhere new (a different key,
+  // or your thumb moves ~20 degrees), that new direction is read from the camera as it is NOW.
+  // Follow cam OFF: plain screen-relative, every frame.
   if (m < .2) { if (L.held) L.releasedAt = G.realT; L.held = false; }
-  else if (!L.held) { L.held = true; L.since = G.realT; }
-  G.inYaw = G.camYaw;
+  else {
+    const ang = Math.atan2(x, z);
+    if (!L.held || Math.abs(angDiff(L.ang, ang)) > .35) { if (!L.held) L.since = G.realT; L.held = true; L.ang = ang; L.yaw = G.camYaw; L.turnAt = G.realT; }
+  }
+  G.inYaw = (G.follow && L.held && L.yaw != null) ? L.yaw : G.camYaw;
   const cy = Math.cos(G.inYaw), sy = Math.sin(G.inYaw);
   out.set(x * cy + z * sy, 0, -x * sy + z * cy); const l = out.length(); if (l > 1) out.multiplyScalar(1 / l);
   return out;
@@ -4475,7 +4483,7 @@ function toggleFollow() {
   else {
     G.follow = true; G.camZoom = 1; G.camPitch = 1;
     const tgt = behindHim(); G.camYawTo = G.camYaw + angDiff(G.camYaw, tgt);
-    camToast('Following him. Spin the camera with two fingers to stop.');
+    camToast('Following him: the camera swings round behind him as he goes.');
   }
   try { localStorage.setItem('dodo_follow3', G.follow ? '1' : '0'); } catch (e) { }
 }
@@ -4489,20 +4497,26 @@ function updateCamInput(dtR) {
   G.manualT += dtR;
   if (input.k.q) { manualSpin(); G.camYaw += 1.8 * dtR; }
   if (input.k.e) { manualSpin(); G.camYaw -= 1.8 * dtR; }
-  // follow cam: drifts gently round behind the way he's moving. Input stays screen-relative every frame,
-  // so holding left always sends him screen-left; the camera just eases round after him. Moving straight
-  // toward or away from the camera doesn't turn it (sin of the angle), so it never whips round 180.
+  // follow cam: swings round behind him so you can see where he's heading.
+  // While you steer it swings behind the direction you're pushing; when you let go it settles in behind
+  // the way he's walking. Not during a chase (you need to see the teeth) and not right after you spun it.
   const spd = Math.hypot(D.vel.x, D.vel.z);
-  if (G.follow && G.mode === 'play' && G.camYawTo == null && G.manualT > .6 && spd > 1.4 && !gest) {
+  if (G.follow && G.mode === 'play' && G.camYawTo == null && G.manualT > .6 && spd > 1.0 && !gest) {
     const th = nearestThreat();
     const danger = (th.r && (isHunting(th.r) || th.r.state === 'faceplant') && th.d < 26) || awakeTiger();
-    const okState = ['wander', 'popout', 'hide', 'hush', 'butterfly', 'stagger', 'snack'].indexOf(D.state) >= 0;
+    const okState = ['wander', 'popout', 'hide', 'hush', 'butterfly', 'stagger', 'snack', 'panic', 'honk', 'jump'].indexOf(D.state) >= 0;
+    let target = null, gain = 1;
     if (!danger && okState) {
-      const target = Math.atan2(D.vel.x, D.vel.z) + Math.PI, diff = angDiff(G.camYaw, target);
-      const rate = .36 * Math.abs(Math.sin(diff)) * clamp(spd / 4, .4, 1) * (INLOCK.held ? 1 : 1.6);
-      G.camYaw += Math.sign(diff) * Math.min(Math.abs(diff), rate * dtR);
+      if (INLOCK.held && G.realT - INLOCK.since > .2) { const w = readPush(new V3()); if (w.lengthSq() > .04) target = Math.atan2(w.x, w.z) + Math.PI; }
+      else if (!INLOCK.held && G.lookV.length() > 1.2) { target = Math.atan2(G.lookV.x, G.lookV.z) + Math.PI; gain = .6; }
     }
-  }
+    if (target != null) {
+      const diff = angDiff(G.camYaw, target), ad = Math.abs(diff);
+      // small dead-zone so tiny wiggles don't rock the camera; then a smooth, decisive swing (~1s for 90 degrees)
+      if (ad > .2) G.followTurning = true; else if (ad < .03) G.followTurning = false;
+      if (G.followTurning) { const rate = Math.min(2.4, ad * 2.4 + .4) * gain; G.camYaw += Math.sign(diff) * Math.min(ad, rate * dtR); }
+    } else G.followTurning = false;
+  } else G.followTurning = false;
 
   if (G.camYawTo != null) { G.camYaw += (G.camYawTo - G.camYaw) * Math.min(1, dtR * 6); if (Math.abs(G.camYawTo - G.camYaw) < .01) { G.camYaw = G.camYawTo; G.camYawTo = null; } }
   const btn = $('camBtn'); btn.hidden = G.mode !== 'play'; btn.classList.toggle('follow', G.follow); btn.setAttribute('aria-pressed', G.follow ? 'true' : 'false');
