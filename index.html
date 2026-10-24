@@ -1811,10 +1811,40 @@ function aBuild(ctx) {
   if (typeof ambBuild === 'function') ambBuild();
 }
 function aInit() {
-  if (A.on) { if (A.ctx.state === 'suspended') A.ctx.resume(); return; }
+  // iPhone: treat the game like a music app, so the ring/silent switch doesn't mute it (iOS 16.4+)
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { }
+  // iOS can leave the context 'suspended' OR 'interrupted' (after a call, lock screen, app switch)
+  if (A.on) { if (A.ctx.state !== 'running' && G.mode !== 'paused') A.ctx.resume().catch(() => { }); return; }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
   try { aBuild(new C()); prewarm(); } catch (e) { A.on = false; }
 }
+/* ---- iPhone audio unlock (v0.10.1) ----
+   1) Older iPhones only let a page make sound from a "real" tap (touchend/click), not from touch-down.
+   2) Web audio obeys the silent switch unless an ordinary <audio> element is playing, so we loop a
+      tiny silent clip; that flips the page into "media playback" mode, like a music app.
+   3) Coming back to the app (after locking the phone etc.) wakes the audio up again. */
+const AUNLOCK = { el: null };
+function silentWav() {
+  const n = 800, b = new Uint8Array(44 + n * 2), v = new DataView(b.buffer), w = (o, s) => { for (let i = 0; i < s.length; i++) b[o + i] = s.charCodeAt(i); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return 'data:audio/wav;base64,' + btoa(s);
+}
+function audioUnlock() {
+  aInit();
+  if (!A.on) return;
+  if (A.ctx.state !== 'running' && G.mode !== 'paused') A.ctx.resume().catch(() => { });
+  try { const s = A.ctx.createBufferSource(); s.buffer = A.ctx.createBuffer(1, 1, 22050); s.connect(A.ctx.destination); s.start(0); } catch (e) { }
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+    if (!AUNLOCK.el) { const el = AUNLOCK.el = document.createElement('audio'); el.src = silentWav(); el.loop = true; el.setAttribute('playsinline', ''); el.setAttribute('x-webkit-airplay', 'deny'); el.preload = 'auto'; }
+    if (AUNLOCK.el.paused && !A.muted) { const pr = AUNLOCK.el.play(); if (pr && pr.catch) pr.catch(() => { }); }
+  }
+}
+['touchend', 'click', 'keydown', 'pointerup'].forEach(ev => window.addEventListener(ev, audioUnlock, { capture: true, passive: true }));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (AUNLOCK.el) AUNLOCK.el.pause(); return; }
+  if (A.on && G.mode !== 'paused') { A.ctx.resume().catch(() => { }); if (AUNLOCK.el && !A.muted) AUNLOCK.el.play().catch(() => { }); }
+});
 function aNow() { return A.ctx.currentTime + A.tOff; }
 function o(type, f) { const x = A.ctx.createOscillator(); x.type = type; x.frequency.value = f; return x; }
 function g(v) { const x = A.ctx.createGain(); x.gain.value = v; return x; }
@@ -1838,6 +1868,7 @@ function setMuted(m) {
   A.muted = m;
   $('spkW').style.display = m ? 'none' : ''; $('spkX').style.display = m ? '' : 'none';
   if (A.on) A.master.gain.setTargetAtTime(m ? 0 : .9, aNow(), .05);
+  if (typeof AUNLOCK !== 'undefined' && AUNLOCK.el) { if (m) AUNLOCK.el.pause(); else AUNLOCK.el.play().catch(() => { }); }
   try { localStorage.setItem('dodo_muted', m ? '1' : '0'); } catch (e) { }
 }
 
