@@ -298,6 +298,25 @@ button.ghost{font-family:var(--ui);font-weight:900;font-size:14px;background:tra
   #bestLine{text-align:center}
 }
 @media (max-width:420px){ .act{width:64px;height:64px} .act b{font-size:15px} .stats{grid-template-columns:repeat(2,minmax(0,1fr))} #status{max-width:calc(100vw - 196px)} #stWhy{display:none} }
+/* ---------- v0.10.2 phone layout: left thumb taps, right thumb steers; text never blocks a touch ---------- */
+#toast,#camHint,#keys,#status,#hudL,#hudR,#banner,#introCap,#introDay{pointer-events:none}
+@media (pointer:coarse){
+  #acts{left:max(12px,env(safe-area-inset-left,0px));right:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:178px;height:178px;display:block;gap:0}
+  #acts .act{position:absolute;width:68px;height:68px}
+  #acts .act b{font-size:16px}
+  #bJump{left:0;bottom:0;width:78px!important;height:78px!important}
+  #bJump b{font-size:19px!important}
+  #bHonk{left:92px;bottom:8px}
+  #bHush{left:6px;bottom:92px}
+  #camBtn{left:max(14px,env(safe-area-inset-left,0px));right:auto;bottom:calc(196px + env(safe-area-inset-bottom,0px))}
+  #muteBtn{left:calc(max(14px,env(safe-area-inset-left,0px)) + 52px);right:auto;bottom:calc(196px + env(safe-area-inset-bottom,0px))}
+  #camHint{left:calc(max(14px,env(safe-area-inset-left,0px)) + 104px);right:auto;bottom:calc(200px + env(safe-area-inset-bottom,0px));white-space:normal;max-width:calc(100vw - 140px)}
+  /* hints live at the top now, small and see-through, out of the way of both thumbs */
+  #toast{top:calc(92px + env(safe-area-inset-top,0px));bottom:auto;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));
+    max-width:none;transform:none;font-size:13px;line-height:1.3;padding:7px 11px;border-width:2.5px;box-shadow:3px 3px 0 var(--ink);opacity:.94}
+  #toast.show{animation:toastTop .3s cubic-bezier(.3,1.6,.5,1)}
+}
+@keyframes toastTop{from{transform:translateY(-16px) scale(.92);opacity:0}}
 @media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms!important;transition-duration:.01ms!important} }
 </style>
 
@@ -3444,7 +3463,14 @@ const HINTS = {
   chaseDist: 'Even mid-chase he gets distracted, but only for a second. Then he remembers. HONK snaps him out of it.'
 };
 const hintSeen = {}; let toastT = 0;
-function hint(k) { if (hintSeen[k] || G.mode !== 'play') return; hintSeen[k] = 1; const el = $('toast'); el.textContent = HINTS[k]; el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); toastT = k === 'lunge' ? 2.6 : 5; }
+const COARSE = window.matchMedia && matchMedia('(pointer:coarse)').matches;
+function showToast(txt, dur) {
+  const el = $('toast'); el.textContent = txt; el.hidden = false;
+  // phones: tuck it just under whichever top panel is taller, so it never sits under a thumb
+  if (COARSE) { let y = 0; for (const id of ['hudL', 'status']) { const r = $(id).getBoundingClientRect(); if (r.height && $(id).style.display !== 'none') y = Math.max(y, r.bottom); } el.style.top = Math.round(Math.max(60, y) + 8) + 'px'; }
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); toastT = dur;
+}
+function hint(k) { if (hintSeen[k] || G.mode !== 'play') return; hintSeen[k] = 1; showToast(HINTS[k], k === 'lunge' ? 2.6 : 4.5); }
 function hideToast() { $('toast').hidden = true; toastT = 0; }
 function showBanner(txt, gold) { const b = $('banner'); b.textContent = txt; b.classList.toggle('gold', !!gold); b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); }
 
@@ -3465,7 +3491,7 @@ function newRun() {
 function beginPlay() {
   G.mode = 'play'; document.body.classList.remove('cine');
   $('introCap').classList.remove('on'); $('introDay').classList.remove('on'); $('skip').hidden = true;
-  if (G.day === 1) { if (matchMedia('(pointer:coarse)').matches) HINTS.start = 'Drag to nudge him. Two fingers spin the camera. Bring shinies to the nest, get home by sunset.'; hint('start'); }
+  if (G.day === 1) { if (matchMedia('(pointer:coarse)').matches) HINTS.start = 'Right thumb steers (drag anywhere). Left thumb: jump · honk · hush.'; hint('start'); }
   setTimeout(() => $('keys').classList.add('fade'), 26000);
 }
 function showDeath() {
@@ -3643,7 +3669,7 @@ function updateHUD(dtR) {
     const cx = W / 2, cy = H / 2, dx = x - cx, dy = y - cy;
     const s = Math.min((W / 2 - M) / Math.abs(dx || 1e-3), (H / 2 - M) / Math.abs(dy || 1e-3));
     x = cx + dx * s; y = cy + dy * s;
-    if (x > W - 120 && y > H - 230) y = H - 230;   // keep clear of the buttons
+    if (COARSE ? (x < 240 && y > H - 290) : (x > W - 120 && y > H - 230)) y = COARSE ? H - 290 : H - 230;   // keep clear of the buttons
     e.style.display = ''; e.style.transform = `translate(${x.toFixed(0)}px,${y.toFixed(0)}px)`;
     e.className = 'edge' + (tg.kind === 'hot' ? ' hot' : tg.kind === 'nest' ? ' nest' : tg.kind === 'shiny' ? ' shiny' : tg.kind === 'berry' ? ' berry' : '');
     e.firstChild.style.transform = `rotate(${(Math.atan2(dy, dx) * 180 / Math.PI + 90).toFixed(0)}deg)`;
@@ -4405,7 +4431,7 @@ stageEl.addEventListener('pointerdown', e => {
 });
 window.addEventListener('pointermove', e => {
   if (mouseDrag && e.pointerType === 'mouse') {
-    G.camYaw = mouseDrag.yaw - (e.clientX - mouseDrag.x) * .007; G.camYawTo = null; G.manualT = 0;
+    const ny = mouseDrag.yaw - (e.clientX - mouseDrag.x) * .007; if (Math.abs(ny - G.camYaw) > 1e-4 && Math.abs(e.clientX - mouseDrag.x) > 6) manualSpin(); G.camYaw = ny; G.manualT = 0;
     G.camPitch = mouseDrag.pitch + (e.clientY - mouseDrag.y) * .004; camClamp(); return;
   }
   if (fingers.has(e.pointerId)) fingers.get(e.pointerId).x = e.clientX, fingers.get(e.pointerId).y = e.clientY;
@@ -4413,14 +4439,18 @@ window.addEventListener('pointermove', e => {
     const [a, b] = [...fingers.values()];
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, d = Math.hypot(a.x - b.x, a.y - b.y) || 1, ang = Math.atan2(b.y - a.y, b.x - a.x);
     let twist = ang - gest.ang; while (twist > Math.PI) twist -= TAU; while (twist < -Math.PI) twist += TAU;
-    G.camYaw = gest.yaw - (mx - gest.mx) * .009 + twist; G.camYawTo = null; G.manualT = 0;
+    const ny = gest.yaw - (mx - gest.mx) * .009 + twist;
+    if (Math.abs(angDiff(gest.yaw, ny)) > .18) { if (!gest.spun) { gest.spun = true; manualSpin(); } }
+    if (gest.spun || !G.follow) { G.camYaw = ny; G.camYawTo = null; } G.manualT = 0;
     G.camPitch = gest.pitch + (my - gest.my) * .005;
     G.camZoom = gest.zoom * gest.d / d; camClamp();
     return;
   }
   if (!input.touch.on || e.pointerId !== input.touch.id) return;
   let dx = e.clientX - input.touch.ox, dy = e.clientY - input.touch.oy; const l = Math.hypot(dx, dy), m = 50;
-  if (l > m) { dx *= m / l; dy *= m / l; }
+  if (l > m) { // thumb ran past the edge: drag the whole stick along, so you never run out of stick
+    input.touch.ox = e.clientX - dx * m / l; input.touch.oy = e.clientY - dy * m / l; dx *= m / l; dy *= m / l;
+    stickEl.style.left = input.touch.ox + 'px'; stickEl.style.top = input.touch.oy + 'px'; }
   input.touch.x = dx / m; input.touch.y = dy / m; knob.style.transform = `translate(${dx}px,${dy}px)`;
 });
 const endTouch = e => {
@@ -4433,39 +4463,53 @@ window.addEventListener('pointerup', endTouch); window.addEventListener('pointer
 stageEl.addEventListener('wheel', e => { e.preventDefault(); G.camZoom *= Math.exp(e.deltaY * .0012); camClamp(); }, { passive: false });
 stageEl.addEventListener('contextmenu', e => e.preventDefault());
 $('camBtn').addEventListener('click', () => { S.pop(); toggleFollow(); });
+function camIsHome() { return Math.abs(G.camZoom - 1) < .02 && Math.abs(G.camPitch - 1) < .02; }
+function behindHim() { const sp = Math.hypot(D.vel.x, D.vel.z); return (sp > .8 ? Math.atan2(D.vel.x, D.vel.z) : D.heading) + Math.PI; }
+function camToast(txt) { showToast(txt, 2.4); }
+/* compass / C key, like the re-center button in a maps app:
+   - not following (or zoomed/tilted away)  -> snap back to the normal view behind him, and follow
+   - already following at the normal view   -> stop following (camera stays put) */
 function toggleFollow() {
-  G.follow = !G.follow; G.manualT = 99;
-  try { localStorage.setItem('dodo_follow2', G.follow ? '1' : '0'); } catch (e) { }
-  const el = $('toast'); el.textContent = G.follow ? 'Follow camera ON: when you let go, it drifts round behind him.' : 'Follow camera OFF: the camera stays where you put it. Up is always up.';
-  el.hidden = false; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); toastT = 2.6;
+  G.manualT = 99;
+  if (G.follow && camIsHome()) { G.follow = false; G.camYawTo = null; camToast('Follow camera OFF. The camera stays where it is.'); }
+  else {
+    G.follow = true; G.camZoom = 1; G.camPitch = 1;
+    const tgt = behindHim(); G.camYawTo = G.camYaw + angDiff(G.camYaw, tgt);
+    camToast('Following him. Spin the camera with two fingers to stop.');
+  }
+  try { localStorage.setItem('dodo_follow3', G.follow ? '1' : '0'); } catch (e) { }
 }
-G.follow = false; try { if (localStorage.getItem('dodo_follow2') === '1') G.follow = true; } catch (e) { }
+/* the player spun the camera by hand: that's a clear "I'm driving the camera now" */
+function manualSpin() { G.camYawTo = null; G.manualT = 0; if (G.follow) { G.follow = false; try { localStorage.setItem('dodo_follow3', '0'); } catch (e) { } if (G.mode === 'play') camToast('Follow camera off. Tap the compass to follow again.'); } }
+// follow cam: on by default on phones (your thumb steers relative to the screen; the camera eases round after him), off on keyboards
+G.follow = matchMedia('(pointer:coarse)').matches; try { const f = localStorage.getItem('dodo_follow3'); if (f != null) G.follow = f === '1'; } catch (e) { }
 function updateCamInput(dtR) {
   $('camBtn').hidden = G.mode !== 'play';
   if (G.mode !== 'play' && G.mode !== 'paused') return;
   G.manualT += dtR;
-  if (input.k.q) { G.camYaw += 1.8 * dtR; G.camYawTo = null; G.manualT = 0; }
-  if (input.k.e) { G.camYaw -= 1.8 * dtR; G.camYawTo = null; G.manualT = 0; }
-  // follow cam (optional, off by default since v0.10): it ONLY drifts round behind him when you are
-  // not steering. Turning the camera while you hold a direction is what made him "not go where I press".
+  if (input.k.q) { manualSpin(); G.camYaw += 1.8 * dtR; }
+  if (input.k.e) { manualSpin(); G.camYaw -= 1.8 * dtR; }
+  // follow cam: drifts gently round behind the way he's moving. Input stays screen-relative every frame,
+  // so holding left always sends him screen-left; the camera just eases round after him. Moving straight
+  // toward or away from the camera doesn't turn it (sin of the angle), so it never whips round 180.
   const spd = Math.hypot(D.vel.x, D.vel.z);
-  const idleFor = INLOCK.held ? 0 : G.realT - (INLOCK.releasedAt || 0);
-  if (G.follow && G.mode === 'play' && G.manualT > 1.5 && spd > 1.6 && !INLOCK.held && idleFor > .8) {
+  if (G.follow && G.mode === 'play' && G.camYawTo == null && G.manualT > .6 && spd > 1.4 && !gest) {
     const th = nearestThreat();
     const danger = (th.r && (isHunting(th.r) || th.r.state === 'faceplant') && th.d < 26) || awakeTiger();
-    if (!danger && G.lookV.length() > 1.6) {
-      const target = Math.atan2(G.lookV.x, G.lookV.z) + Math.PI, diff = angDiff(G.camYaw, target), ad = Math.abs(diff);
-      if (ad > .35) G.followTurning = true; else if (ad < .05) G.followTurning = false;
-      if (G.followTurning) G.camYaw += Math.sign(diff) * Math.min(ad, Math.min(1.2, ad * 1.4 + .2) * .5 * dtR);
-    } else G.followTurning = false;
-  } else G.followTurning = false;
+    const okState = ['wander', 'popout', 'hide', 'hush', 'butterfly', 'stagger', 'snack'].indexOf(D.state) >= 0;
+    if (!danger && okState) {
+      const target = Math.atan2(D.vel.x, D.vel.z) + Math.PI, diff = angDiff(G.camYaw, target);
+      const rate = .36 * Math.abs(Math.sin(diff)) * clamp(spd / 4, .4, 1) * (INLOCK.held ? 1 : 1.6);
+      G.camYaw += Math.sign(diff) * Math.min(Math.abs(diff), rate * dtR);
+    }
+  }
 
-  if (G.camYawTo != null) { G.camYaw += (G.camYawTo - G.camYaw) * Math.min(1, dtR * 6); if (Math.abs(G.camYawTo - G.camYaw) < .002) { G.camYaw = G.camYawTo; G.camYawTo = null; } }
+  if (G.camYawTo != null) { G.camYaw += (G.camYawTo - G.camYaw) * Math.min(1, dtR * 6); if (Math.abs(G.camYawTo - G.camYaw) < .01) { G.camYaw = G.camYawTo; G.camYawTo = null; } }
   const btn = $('camBtn'); btn.hidden = G.mode !== 'play'; btn.classList.toggle('follow', G.follow); btn.setAttribute('aria-pressed', G.follow ? 'true' : 'false');
   $('compass').style.transform = `rotate(${(G.camYaw * 180 / Math.PI).toFixed(1)}deg)`;
   if (!camHintShown && G.mode === 'play' && G.time > 6) {
     camHintShown = true; const h = $('camHint');
-    h.textContent = matchMedia('(pointer:coarse)').matches ? 'Two fingers spin & zoom · compass = follow cam' : 'Drag to spin, scroll to zoom · C = follow cam';
+    h.textContent = matchMedia('(pointer:coarse)').matches ? 'Two fingers: spin & zoom · compass: re-center & follow' : 'Drag to spin, scroll to zoom · C: re-center & follow';
     h.hidden = false; setTimeout(() => { h.style.opacity = 0; setTimeout(() => h.hidden = true, 700); }, 5000);
   }
 }
