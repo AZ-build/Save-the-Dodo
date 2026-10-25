@@ -9,8 +9,9 @@ nest, and get him home by sunset. Something enormous is hungry. Several somethin
 (iPhone: Share → Add to Home Screen · Android: ⋮ → Install app). It works offline after the first load.
 
 ## Controls
-- **Phone:** drag anywhere to nudge him · two fingers to spin/zoom the camera · HUSH (hold) · HONK! (tap) · compass = follow camera
-- **Keyboard:** WASD nudge · Space hush/hide · Shift honk · drag mouse / Q E spin · scroll zoom · C follow camera · P pause · M mute · T tuning rack
+- **Phone:** drag anywhere to steer him · two fingers to spin/zoom the camera · HUSH (hold) · HONK! (tap) · JUMP (tap) · compass = re-center & follow · ❚❚ (top-right) = pause menu with settings
+- **Keyboard:** WASD / arrows steer · Space hush/hide · Shift honk · F jump · drag mouse / Q E spin · scroll zoom · C follow camera · Esc or P pause menu · M mute · T tuning rack
+- **Settings** (main menu or pause menu): master / music / sound effects / ambience volume, follow camera, tips on/off
 
 ## Files
 - `index.html` — the whole game (three.js r128, procedural audio, no external assets)
