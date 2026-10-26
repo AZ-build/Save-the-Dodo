@@ -12,7 +12,8 @@ Survive three days and the egg hatches.
 ## Controls
 - **Phone:** drag anywhere to steer him · two fingers to spin/zoom the camera · HUSH (hold) · HONK! (tap) · JUMP (tap) · compass = re-center & follow · ❚❚ (top-right) = pause menu with settings
 - **Keyboard:** WASD / arrows steer · Space hush/hide · Shift honk · F jump · drag mouse / Q E spin · scroll zoom · C follow camera · Esc or P pause menu · M mute · T tuning rack
-- **Settings** (main menu or pause menu): master / music / sound effects / ambience volume, follow camera, tips on/off
+- **Settings** (main menu or pause menu): master / music / sound effects / ambience volume, follow camera, tips on/off, Graphics (Auto / High / Balanced / Battery saver), Performance dashboard
+- **Performance dashboard:** Settings → Performance dashboard, or F3 / ` on a keyboard, or add `?perf` to the URL. "Profile pipeline" measures what each part of the scene costs; "Copy report" copies everything as text.
 
 ## Files
 - `index.html` — the whole game (three.js r128, procedural audio, no external assets)

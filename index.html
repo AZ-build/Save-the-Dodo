@@ -376,6 +376,30 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
 #hudR{right:calc(max(14px,env(safe-area-inset-right,0px)) + 58px)}
 #rack{top:calc(176px + env(safe-area-inset-top,0px))}
 
+/* settings: graphics */
+.gfxRow{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:8px 10px;border:2.5px solid var(--ink);border-radius:12px;background:var(--paper2)}
+.gfxRow b{display:block;font-weight:900;font-size:14px}.gfxRow small{display:block;font-size:12px;font-weight:700;color:var(--mute)}
+.gfxRow select{font:900 14px var(--ui);color:var(--ink);background:var(--paper);border:2.5px solid var(--ink);border-radius:10px;padding:6px 8px;flex:0 0 auto}
+/* performance dashboard */
+#perf{position:fixed;z-index:20;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(330px,calc(100vw - 20px));max-height:calc(100vh - 90px);overflow-y:auto;
+  background:rgba(18,12,8,.9);color:#f5ecd8;border:2px solid #000;border-radius:12px;padding:8px 10px;font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;-webkit-user-select:text;user-select:text}
+#perf.min .pf-body{display:none}
+.pf-head{display:flex;align-items:baseline;gap:6px}
+.pf-head b{font-size:20px}.pf-dim{color:#b8a98f}.pf-sp{flex:1}
+#perf button{font:700 11px ui-monospace,Menlo,monospace;color:#f5ecd8;background:#3a2b1e;border:1px solid #6b5640;border-radius:6px;padding:4px 8px;cursor:pointer}
+.pf-head button{padding:0 7px;font-size:14px;line-height:20px}
+#pfGraph{width:100%;height:54px;display:block;margin:6px 0 2px;border-radius:4px}
+.pf-sec{margin-top:7px;padding-top:4px;border-top:1px solid #4a3a2a;color:#ffc23a;font-weight:700}
+.pf-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+#pfStages .pf-row{grid-template-columns:118px 1fr 44px}
+.pf-row span i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px}
+.pf-bar{height:6px;background:#2b2018;border-radius:3px;overflow:hidden}.pf-bar i{display:block;height:100%;width:0;margin:0!important}
+.pf-row b{text-align:right;font-weight:700}.pf-row em{color:#9fe6ff;font-style:normal}
+.pf-tot{border-top:1px dashed #4a3a2a;margin-top:2px}
+.pf-note{margin-top:4px;color:#ffe3a3}
+.pf-btns{display:flex;gap:6px;margin-top:8px}
+.pf-ta{width:100%;height:120px;margin-top:6px;font:10px ui-monospace,monospace}
+
 /* Doda's needs */
 #dodaRow{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:900;letter-spacing:.06em}
 #dodaRow .dn{color:#c2416b}
@@ -544,6 +568,8 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     <div class="sliders" id="volSliders"></div>
     <label class="tog"><input type="checkbox" id="optFollow"><span><b>Follow camera</b><small>Swings round behind him as he runs.</small></span></label>
     <label class="tog"><input type="checkbox" id="optTips"><span><b>Show tips</b><small>Pop-up hints the first time things happen.</small></span></label>
+    <div class="gfxRow"><label for="optGfx"><b>Graphics</b><small id="gfxNote"></small></label><select id="optGfx"></select></div>
+    <label class="tog"><input type="checkbox" id="optPerf"><span><b>Performance dashboard</b><small>Frame timings for nerds. Also F3 or ` on a keyboard.</small></span></label>
     <button class="big" data-back>Done</button>
   </div>
 </div>
@@ -668,11 +694,35 @@ const tv = k => TUN[k].v;
 
 /* ---------------- renderer / scene ---------------- */
 const stageEl = $('stage');
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+/* ---- graphics presets (v0.13) ----
+   The cost of a frame grows with the number of pixels drawn. Big or high-DPI screens were drawing up to ~11
+   million pixels a frame. Now every preset has a PIXEL BUDGET: past it, the game renders at a lower internal
+   resolution and the browser scales it up. "Auto" also adjusts resolution live to hold ~60fps. */
+const GFX_PRESETS = {
+  auto:     { label: 'Auto',          note: 'Adjusts resolution to stay smooth. Recommended.', cap: 1.75, mp: 2.2, soft: false, shadow: 2048, grassShadow: true,  drs: true },
+  high:     { label: 'High',          note: 'Sharpest. For fast computers.',                    cap: 2,    mp: 3.8, soft: true,  shadow: 2048, grassShadow: true,  drs: false },
+  balanced: { label: 'Balanced',      note: 'Fixed medium resolution, simpler shadows.',        cap: 1.5,  mp: 1.6, soft: false, shadow: 1024, grassShadow: true,  drs: false },
+  saver:    { label: 'Battery saver', note: 'Low resolution, no grass shadows. Smoothest.',     cap: 1,    mp: .9,  soft: false, shadow: 1024, grassShadow: false, drs: true }
+};
+const DPR = window.devicePixelRatio || 1;
+const GFX = { preset: 'auto', scale: 1, ratio: 1 };
+try { const p = localStorage.getItem('dodo_gfx'); if (GFX_PRESETS[p]) GFX.preset = p; } catch (e) { }
+const gfxP = () => GFX_PRESETS[GFX.preset];
+// MSAA (antialias) is nearly free at 1x but costly on high-DPI screens, where pixels are already tiny
+const renderer = new THREE.WebGLRenderer({ antialias: DPR < 1.5 && GFX.preset !== 'saver', preserveDrawingBuffer: false, powerPreference: 'high-performance' });
+function gfxRatio() {
+  const P = gfxP(), px = Math.max(1, window.innerWidth * window.innerHeight);
+  return clamp(Math.min(DPR, P.cap, Math.sqrt(P.mp * 1e6 / px)) * GFX.scale, .4, 3);
+}
+GFX.ratio = gfxRatio(); renderer.setPixelRatio(GFX.ratio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = gfxP().soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+/* ---- performance counters (read by the dashboard, see 5g_perf) ---- */
+const PERF = { on: false, bench: false, t0: 0, acc: {}, frames: 0,
+  start() { if (this.on) this.t0 = performance.now(); },
+  lap(k) { if (!this.on) return; const n = performance.now(); this.acc[k] = (this.acc[k] || 0) + n - this.t0; this.t0 = n; } };
+const GRASS_MESHES = [], WATER_REF = {};
 stageEl.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, .1, 1400);
@@ -682,7 +732,7 @@ scene.fog = new THREE.Fog(0xbfe0ee, 80, 330);
 const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x6b5a3a, .72); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff2dc, 1.0);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+{ const sz = gfxP().shadow === 2048 && window.matchMedia && matchMedia('(pointer:coarse)').matches ? 1024 : gfxP().shadow; sun.shadow.mapSize.set(sz, sz); }
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 220;
 sun.shadow.camera.left = -38; sun.shadow.camera.right = 38; sun.shadow.camera.top = 38; sun.shadow.camera.bottom = -38;
 sun.shadow.bias = -0.0008;
@@ -707,7 +757,7 @@ function outlineMat(th) {
     s.uniforms.uTh = { value: th };
     s.vertexShader = 'uniform float uTh;\n' + s.vertexShader.replace('#include <begin_vertex>', 'vec3 transformed = position + normal * uTh;');
   };
-  m.customProgramCacheKey = () => 'outline';
+  m.customProgramCacheKey = () => 'outline'; m.userData.th = th;
   OL_CACHE[key] = m; return m;
 }
 const GEO = {
@@ -738,6 +788,43 @@ function part(parent, geo, mat, p, s, r, olWorld) {
     m.add(o);
   }
   return m;
+}
+/* mergeRig (v0.13): characters were ~60% of all draw calls (every body part and its outline was its own
+   object). This bakes the rigid parts of each moving joint into ONE mesh (colours become vertex colours) plus
+   ONE outline mesh, so a dodo goes from ~110 draws to ~20. Parts the animation touches directly are kept. */
+const OL_MERGED = new THREE.MeshBasicMaterial({ color: 0x24170e, side: THREE.BackSide });
+const TOON_VC = toonVC(), TOON_VC_FLAT = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: GRAD, flatShading: true });
+function mergeRig(root, P) {
+  const keep = new Set();
+  const scan = v => { if (!v) return; if (v.isMesh) keep.add(v); else if (Array.isArray(v)) v.forEach(scan); else if (typeof v === 'object' && !v.isObject3D && !v.isMaterial) Object.values(v).forEach(scan); };
+  Object.values(P || {}).forEach(scan);
+  const groups = []; root.traverse(o => { if (!o.isMesh) groups.push(o); });
+  const m4 = new THREE.Matrix4(), nm = new THREE.Matrix3(), v = new V3(), n = new V3();
+  for (const g of groups) {
+    const buckets = { soft: [], flat: [] }, ol = [];
+    for (const c of g.children) {
+      if (!c.isMesh || keep.has(c) || !c.material || !c.material.isMeshToonMaterial || c.material.vertexColors) continue;
+      if (c.children.some(k => !(k.isMesh && k.material && k.material.side === THREE.BackSide))) continue;
+      (c.material.flatShading ? buckets.flat : buckets.soft).push(c);
+    }
+    for (const kind of ['soft', 'flat']) {
+      const list = buckets[kind]; if (list.length < 2) continue;
+      const P0 = [], N0 = [], C0 = [], PO = [];
+      for (const c of list) {
+        c.updateMatrix(); m4.copy(c.matrix); nm.getNormalMatrix(m4);
+        const gg = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry, pa = gg.attributes.position, na = gg.attributes.normal, col = c.material.color;
+        for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(m4); n.fromBufferAttribute(na, i).applyMatrix3(nm).normalize(); P0.push(v.x, v.y, v.z); N0.push(n.x, n.y, n.z); C0.push(col.r, col.g, col.b); }
+        for (const o of c.children) {   // its outline: push out along the normals by its thickness, then place it
+          const og = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry, op = og.attributes.position, on = og.attributes.normal, th = o.material.userData.th || .02;
+          for (let i = 0; i < op.count; i++) { v.fromBufferAttribute(op, i).addScaledVector(n.fromBufferAttribute(on, i), th).applyMatrix4(m4); PO.push(v.x, v.y, v.z); }
+        }
+        g.remove(c);
+      }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P0, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(N0, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(C0, 3));
+      const mm = new THREE.Mesh(geo, kind === 'flat' ? TOON_VC_FLAT : TOON_VC); mm.castShadow = true; g.add(mm);
+      if (PO.length) { const og = new THREE.BufferGeometry(); og.setAttribute('position', new THREE.Float32BufferAttribute(PO, 3)); g.add(new THREE.Mesh(og, OL_MERGED)); }
+    }
+  }
 }
 /* lumpy faceted blob: an icosphere pushed around by noise (coincident vertices move together) */
 const BLOBS = [];
@@ -917,7 +1004,7 @@ const waterU = {
       }`
   });
   const w = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 180, 180), mat);
-  w.rotation.x = -Math.PI / 2; w.position.y = WATER_Y; scene.add(w);
+  w.rotation.x = -Math.PI / 2; w.position.y = WATER_Y; scene.add(w); WATER_REF.mesh = w;
 })();
 
 /* ---------------- sky dome ---------------- */
@@ -1322,7 +1409,7 @@ function grassTint(x, z, h, out) {
       m4.compose(pv.set(t.x - cx, t.y, t.z - cz), q, sc.set(t.s, t.s * gr(.85, 1.2), t.s)); im.setMatrixAt(k, m4);
       c.setRGB(t.r, t.g, t.b); im.setColorAt(k, c);
     });
-    im.position.set(cx, 0, cz); im.receiveShadow = true; im.castShadow = false; scene.add(im);
+    im.position.set(cx, 0, cz); im.receiveShadow = gfxP().grassShadow; im.castShadow = false; scene.add(im); GRASS_MESHES.push(im);
   });
   /* flowers */
   const fb = new Builder();
@@ -1616,83 +1703,90 @@ function applyEnv(df, focus) {
    ===================================================================== */
 function buildDodo(pal) {
   pal = pal || {};
-  /* Matches the Save the Dodo key art: chubby blue-grey body, white chest, big round head, huge eyes
-     with brows, yellow beak with a big dark hooked tip, messy crest, white tail fluff, orange legs. */
+  /* v0.13 redesign, matched to the key art: big head that flows into a thick neck (no more ball-on-a-ball),
+     white bare-skin cheeks with the eyes set on the SIDES of the head, a long yellow beak ending in a heavy
+     dark hook, spiky crest, pear-shaped blue-grey body leaning forward, pale fluffy chest, chunky orange legs. */
   const root = new THREE.Group();
   const tilt = new THREE.Group(); root.add(tilt);
   const bob = new THREE.Group(); tilt.add(bob);
   const P = {};
-  const grey = toon(pal.grey || 0x98a1ae), greyD = toon(pal.greyD || 0x6f7886), chest = toon(pal.chest || 0xf4f1ea), fluff = toon(0xffffff), beakY = toon(0xffb62e), beakD = toon(0x3a3c42),
-    mouth = toon(0x9e2a33), tongue = toon(0xf07a8c), legM = toon(0xf7a12a), clawM = toon(0x2e2622), black = new THREE.MeshBasicMaterial({ color: 0x15100c }), eyeW = toon(0xffffff), brow = toon(0x4a505a);
-  const OL = .038;
-  // chubby egg body + white chest
-  P.body = part(bob, GEO.sph, grey, [0, .82, -.05], [.7, .66, .76], null, OL);
-  part(bob, GEO.sph, greyD, [0, 1.1, -.25], [.52, .32, .55]);
-  part(bob, GEO.sph, chest, [0, .78, .3], [.5, .52, .46], null, OL * .7);
-  for (let k = 0; k < 5; k++) part(bob, GEO.sph, fluff, [(k - 2) * .14, .66 + Math.abs(k - 2) * .05, .7 - Math.abs(k - 2) * .07], [.1, .07, .06]);   // fluffy scallops
-  // little wings with white feather tips
+  const grey = toon(pal.grey || 0x8f9bb1), greyD = toon(pal.greyD || 0x67728b), chest = toon(pal.chest || 0xe6e9f0), fluff = toon(0xffffff), beakY = toon(0xffb12c), beakO = toon(0xf08a1e), beakD = toon(0x4b4f59),
+    mouth = toon(0x9e2a33), tongue = toon(0xf07a8c), legM = toon(0xf6a02a), clawM = toon(0x2e2622), black = new THREE.MeshBasicMaterial({ color: 0x15100c }), eyeW = toon(0xffffff), brow = toon(pal.brow || 0x4a5262), cheek = toon(pal.face || 0xf3f4f8);
+  const OL = .036;
+  // pear body, leaning forward: big rump, rounder breast, darker back
+  P.body = part(bob, GEO.sph, grey, [0, .84, -.08], [.72, .68, .8], [-.12, 0, 0], OL);
+  part(bob, GEO.sph, greyD, [0, 1.08, -.3], [.54, .34, .56], [-.2, 0, 0]);
+  part(bob, GEO.sph, chest, [0, .8, .3], [.54, .56, .48], null, OL * .7);
+  for (let k = 0; k < 7; k++) { const a = (k - 3) * .32; part(bob, GEO.sph, k % 2 ? chest : fluff, [Math.sin(a) * .4, .58 + Math.abs(k - 3) * .05, .62 - Math.abs(k - 3) * .06], [.11, .08, .07], [0, a, 0]); }   // breast fluff
+  // wings: grey with a fan of pale feather tips
   [1, -1].forEach(sd => {
-    const w = new THREE.Group(); w.position.set(.64 * sd, 1.0, .02); bob.add(w);
-    part(w, GEO.sph, grey, [.02 * sd, -.08, -.06], [.12, .26, .32], [.25, 0, -.2 * sd], OL * .8);
-    for (let k = 0; k < 3; k++) part(w, GEO.sph, fluff, [.05 * sd, -.24 + k * .03, -.24 - k * .1], [.05, .15, .07], [.9 + k * .15, 0, -.3 * sd], .015);
+    const w = new THREE.Group(); w.position.set(.66 * sd, 1.0, 0); bob.add(w);
+    part(w, GEO.sph, grey, [.03 * sd, -.06, -.06], [.13, .28, .34], [.25, 0, -.2 * sd], OL * .8);
+    for (let k = 0; k < 4; k++) part(w, GEO.sph, k % 2 ? chest : fluff, [.06 * sd, -.24 + k * .025, -.18 - k * .09], [.05, .15, .07], [.85 + k * .15, 0, -.3 * sd], .014);
     if (sd > 0) P.wingL = w; else P.wingR = w;
   });
-  // curly white tail fluff
-  P.tail = new THREE.Group(); P.tail.position.set(0, 1.04, -.74); bob.add(P.tail);
-  [[0, .12, 0, .22], [.15, .04, -.06, .16], [-.15, .04, -.06, .16], [0, .3, -.12, .16], [.1, .24, -.2, .12], [-.1, .22, -.2, .12]]
-    .forEach(([x, y, z, r]) => part(P.tail, GEO.sph, fluff, [x, y, z], r, null, .022));
-  // short thick neck (cartoon) into a big round head
-  P.neck = new THREE.Group(); P.neck.position.set(0, 1.25, .34); bob.add(P.neck);
-  part(P.neck, GEO.sph, grey, [0, .1, .04], [.3, .3, .3], null, OL);
-  const n2 = new THREE.Group(); n2.position.set(0, .2, .04); P.neck.add(n2); P.neck2 = n2;
-  P.head = new THREE.Group(); P.head.position.set(0, .26, .02); n2.add(P.head);
-  part(P.head, GEO.sph, grey, [0, .1, 0], [.44, .42, .42], null, OL);
-  part(P.head, GEO.sph, toon(pal.face || 0xb5bdc8), [0, .02, .2], [.34, .28, .26]);        // lighter cheeks / face
+  // the famous curly white tail tuft, sitting high on the rump
+  P.tail = new THREE.Group(); P.tail.position.set(0, 1.1, -.76); bob.add(P.tail);
+  [[0, .12, 0, .22], [.16, .05, -.05, .16], [-.16, .05, -.05, .16], [0, .32, -.1, .17], [.11, .27, -.2, .12], [-.11, .25, -.2, .12], [0, .44, -.22, .1]]
+    .forEach(([x, y, z, r]) => part(P.tail, GEO.sph, fluff, [x, y, z], r, null, .02));
+  // thick neck that the head grows out of (white throat continues the chest)
+  P.neck = new THREE.Group(); P.neck.position.set(0, 1.18, .36); bob.add(P.neck);
+  part(P.neck, GEO.sph, grey, [0, .14, .02], [.37, .44, .37], [-.25, 0, 0], OL);
+  part(P.neck, GEO.sph, chest, [0, .02, .14], [.3, .3, .26], [-.3, 0, 0]);
+  const n2 = new THREE.Group(); n2.position.set(0, .3, .08); P.neck.add(n2); P.neck2 = n2;
+  P.head = new THREE.Group(); P.head.position.set(0, .16, .06); n2.add(P.head);
+  part(P.head, GEO.sph, grey, [0, .1, -.02], [.46, .43, .47], null, OL);
+  part(P.head, GEO.sph, grey, [0, -.1, -.1], [.36, .3, .36]);                                  // jowl blends head into neck
+  // bare white cheeks: the eyes sit in them, on the sides of the head
+  [1, -1].forEach(sd => part(P.head, GEO.sph, cheek, [.24 * sd, .08, .16], [.25, .25, .26], [0, .5 * sd, 0], OL * .6));
   if (pal.wife) {   // Doda: a hibiscus behind the crest, rosy cheeks, lashes
-    const fl = new THREE.Group(); fl.position.set(.26, .42, -.04); fl.rotation.set(.3, .4, -.5); P.head.add(fl);
+    const fl = new THREE.Group(); fl.position.set(.26, .46, -.08); fl.rotation.set(.3, .4, -.5); P.head.add(fl);
     for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; part(fl, GEO.sph, toon(0xff5f8f), [Math.cos(a) * .09, 0, Math.sin(a) * .09], [.08, .025, .06], [0, -a, 0], .012); }
     part(fl, GEO.sphLo, toon(0xffd84a), [0, .02, 0], .04);
-    [1, -1].forEach(sd => part(P.head, GEO.sph, toon(0xf3a0ae), [.27 * sd, -.04, .26], [.08, .05, .04], [0, .6 * sd, 0]));
+    [1, -1].forEach(sd => part(P.head, GEO.sph, toon(0xf3a0ae), [.34 * sd, -.04, .2], [.07, .05, .05], [0, .9 * sd, 0]));
   }
-  // messy crest (also the control-loss signal)
-  P.tuft = new THREE.Group(); P.tuft.position.set(0, .46, -.06); P.head.add(P.tuft);
-  for (let i = 0; i < 6; i++) part(P.tuft, GEO.cone, i % 2 ? greyD : grey, [(i - 2.5) * .055, .1, -.03 * Math.abs(i - 2.5)], [.04, .3 - Math.abs(i - 2.5) * .03, .04], [-.25, 0, (i - 2.5) * .28], .016);
-  // the beak: big yellow base, huge dark hooked tip
-  part(P.head, GEO.sph, beakY, [0, .03, .55], [.2, .17, .4], [-.04, 0, 0], OL * .8);
-  part(P.head, GEO.sph, beakY, [0, .02, .84], [.16, .14, .24], [-.08, 0, 0], OL * .8);
-  part(P.head, GEO.sph, beakD, [0, -.01, 1.04], [.14, .16, .16], [-.3, 0, 0], OL * .7);
-  part(P.head, GEO.cone, beakD, [0, -.17, 1.12], [.08, .22, .08], [Math.PI * .78, 0, 0], .02);
-  part(P.head, GEO.sphLo, beakD, [.08, .1, .74], [.022, .016, .06]); part(P.head, GEO.sphLo, beakD, [-.08, .1, .74], [.022, .016, .06]);
-  P.jaw = new THREE.Group(); P.jaw.position.set(0, -.1, .34); P.head.add(P.jaw);
-  part(P.jaw, GEO.sph, mouth, [0, .02, .2], [.15, .06, .3]);
-  part(P.jaw, GEO.sph, tongue, [0, .05, .26], [.09, .04, .17]);
-  part(P.jaw, GEO.sph, beakY, [0, -.05, .28], [.15, .07, .4], null, OL * .6);
-  // huge googly eyes (one a bit bigger: vacant, lopsided) + brows
+  // spiky crest (also the control-loss signal: it stands up when he's lost it)
+  P.tuft = new THREE.Group(); P.tuft.position.set(0, .43, -.12); P.head.add(P.tuft);
+  for (let i = 0; i < 7; i++) part(P.tuft, GEO.cone, i % 3 === 1 ? greyD : grey, [(i - 3) * .05, .1, -.035 * Math.abs(i - 3)], [.045, .34 - Math.abs(i - 3) * .035, .045], [-.35, 0, (i - 3) * .26], .015);
+  // the beak: long and yellow, warming to orange, ending in a heavy dark hook
+  // (deep at the base and curving down, like the key art, not a long toucan tube)
+  part(P.head, GEO.sph, beakY, [0, .0, .44], [.24, .23, .32], [-.12, 0, 0], OL * .8);
+  part(P.head, GEO.sph, beakY, [0, -.05, .7], [.19, .2, .24], [-.28, 0, 0], OL * .8);
+  part(P.head, GEO.sph, beakO, [0, -.08, .8], [.17, .18, .13], [-.3, 0, 0]);
+  part(P.head, GEO.sph, beakD, [0, -.13, .9], [.165, .2, .17], [-.5, 0, 0], OL * .7);
+  part(P.head, GEO.cone, beakD, [0, -.3, .98], [.085, .2, .085], [Math.PI * .72, 0, 0], .018);
+  part(P.head, GEO.sphLo, beakD, [.08, .13, .62], [.022, .016, .06]); part(P.head, GEO.sphLo, beakD, [-.08, .13, .62], [.022, .016, .06]);
+  P.jaw = new THREE.Group(); P.jaw.position.set(0, -.14, .3); P.head.add(P.jaw);
+  part(P.jaw, GEO.sph, mouth, [0, .03, .22], [.15, .06, .3]);
+  part(P.jaw, GEO.sph, tongue, [0, .06, .26], [.09, .04, .17]);
+  part(P.jaw, GEO.sph, beakY, [0, -.05, .26], [.17, .08, .34], [-.15, 0, 0], OL * .6);
+  // eyes on the sides of the head (one a bit bigger: vacant, lopsided) + heavy brows
   P.eyes = []; P.brows = [];
   [1, -1].forEach(sd => {
-    const r = sd > 0 ? .17 : .145;
-    const e = new THREE.Group(); e.position.set(.21 * sd, .2, .28); e.rotation.y = .5 * sd; P.head.add(e);
+    const r = sd > 0 ? .155 : .135;
+    const e = new THREE.Group(); e.position.set(.3 * sd, .15, .2); e.rotation.y = .8 * sd; P.head.add(e);
     part(e, GEO.sph, eyeW, [0, 0, 0], r, null, .02);
     const pu = new THREE.Group(); pu.position.set(0, 0, r * .75); e.add(pu);
-    const pm = new THREE.Mesh(GEO.sph, black); pm.scale.set(r * .42, r * .42, r * .25); pu.add(pm);
-    const hl = new THREE.Mesh(GEO.sphLo, new THREE.MeshBasicMaterial({ color: 0xffffff })); hl.scale.setScalar(r * .13); hl.position.set(.025 * sd, .03, r * .2); pu.add(hl);
+    const pm = new THREE.Mesh(GEO.sph, black); pm.scale.set(r * .56, r * .56, r * .28); pu.add(pm);
+    const hl = new THREE.Mesh(GEO.sphLo, new THREE.MeshBasicMaterial({ color: 0xffffff })); hl.scale.setScalar(r * .17); hl.position.set(.025 * sd, .03, r * .2); pu.add(hl);
     P.eyes.push({ g: e, pu, px: 0, py: 0, vx: 0, vy: 0, sd, r });
-    const b = new THREE.Group(); b.position.set(.2 * sd, .2 + r + .03, .33); P.head.add(b);
-    part(b, GEO.sph, brow, [0, 0, 0], [.11, .028, .04], null, .012);
+    const b = new THREE.Group(); b.position.set(.29 * sd, .17 + r + .02, .21); b.rotation.y = .8 * sd; P.head.add(b);
+    part(b, GEO.sph, brow, [0, 0, 0], [.12, .032, .045], null, .012);
     if (pal.wife) for (let k = 0; k < 3; k++) part(b, GEO.cone, brow, [(k - 1) * .045 + .02 * sd, -.05, .03], [.012, .07, .012], [-.5, 0, (k - 1) * .4 + .25 * sd]);
     P.brows.push({ g: b, sd });
   });
-  // orange legs, dark claws
+  // chunky orange legs, big feet, dark claws
   P.legs = [];
   [1, -1].forEach(sd => {
-    const l = new THREE.Group(); l.position.set(.25 * sd, .46, .04); tilt.add(l);
-    part(l, GEO.sph, grey, [0, .12, 0], [.19, .2, .2], null, .02);
-    part(l, GEO.cyl, legM, [0, -.21, 0], [.085, .44, .085], null, .022);
-    for (let k = -1; k <= 1; k++) { part(l, GEO.cone, legM, [k * .09, -.42, .15], [.06, .32, .06], [Math.PI / 2, k * .5, 0], .016); part(l, GEO.cone, clawM, [k * .17, -.42, .32], [.035, .09, .035], [Math.PI / 2, k * .5, 0]); }
-    part(l, GEO.cone, legM, [0, -.42, -.1], [.045, .18, .045], [-Math.PI / 2, 0, 0], .015);
+    const l = new THREE.Group(); l.position.set(.27 * sd, .46, .04); tilt.add(l);
+    part(l, GEO.sph, grey, [0, .12, 0], [.21, .22, .22], null, .02);
+    part(l, GEO.cyl, legM, [0, -.21, 0], [.1, .44, .1], null, .022);
+    for (let k = -1; k <= 1; k++) { part(l, GEO.cone, legM, [k * .1, -.42, .16], [.07, .34, .07], [Math.PI / 2, k * .5, 0], .016); part(l, GEO.cone, clawM, [k * .19, -.42, .34], [.04, .1, .04], [Math.PI / 2, k * .5, 0]); }
+    part(l, GEO.cone, legM, [0, -.42, -.1], [.05, .2, .05], [-Math.PI / 2, 0, 0], .015);
     P.legs.push(l);
   });
   root.traverse(o => { if (o.isMesh && o.material && o.material.side !== THREE.BackSide) o.castShadow = true; });
+  mergeRig(root, P);
   scene.add(root);
   P.beakTip = new THREE.Object3D(); P.beakTip.position.set(0, -.16, 1.0); P.head.add(P.beakTip);
   return { root, tilt, bob, P, walk: 0, blinkT: 2, blink: 0, puff: 0, lastVel: new V3(), tuftUp: 0, wob: Math.random() * 6, stars: makeStars(1) };
@@ -1948,6 +2042,7 @@ function buildRex(scale, palette) {
     P.tail.push(s); prev = s;
   }
   root.traverse(o => { if (o.isMesh && o.material && o.material.side !== THREE.BackSide) o.castShadow = true; });
+  mergeRig(root, P);
   scene.add(root);
   return { root, hips, body, P, scale, stars: makeStars(2.4), lane: makeLane(), anim: { neck: 0, jaw: .05, bodyP: 0, hipsY: 0, headZ: 0, headYaw: 0, shake: 0 } };
 }
@@ -2324,6 +2419,34 @@ defClip('d_hum', k => { const m = HUMS[(k - 1) % HUMS.length], f = [], a = [[0, 
 defClip('d_squawk', DV({ dur: .42, f0: [[0, 950], [.1, 1100], [.42, 700]], vow: [[0, 'a'], [.42, 'o']], drive: .6, jit: .05, sub: .2, fs: 1.15 }));
 defClip('d_uhoh', DV({ dur: .56, f0: [[0, 560], [.2, 580], [.26, 440], [.56, 420]], vow: [[0, 'h'], [.2, 'h'], [.26, 'o']], amp: [[0, 0], [.02, 1], [.19, .9], [.22, .1], [.26, 1], [.48, .8], [.56, 0]] }));
 defClip('d_peck', k => mixN(.08, [[noiseLayer(.03, 'bp', 3000, 2, [[0, 0], [.001, 1], [.03, 0]], 2), 0, .7], [sine(.06, [[0, 1900], [.06, 1300]], expEnv(.06, .012)), 0, .6]]));
+
+/* ---------------- Doda's voice (v0.13) ----------------
+   Same synthesiser, a smaller throat: higher pitch, formants scaled up, breathier and less nasal,
+   with a little flutter. Coos and trills instead of honks. */
+const WPITCH = .8;
+const WV = (spec) => k => { const sp = Object.assign({ fs: 1.2, seed: k * 29 + 7, tilt: 7000, jit: .012, pres: 1.6, src: 'g', pj: .02, sh: .1, nas: [1400, .18, 4], breath: .18, vib: [6.2, .03] }, typeof spec === 'function' ? spec(k) : spec);
+  sp.f0 = typeof sp.f0 === 'number' ? sp.f0 * WPITCH : sp.f0.map(p => [p[0], p[1] * WPITCH]); return vox(sp); };
+defClip('w_ooh', WV(k => ({ dur: .62, f0: [[0, 560 + k * 30], [.22, 820 + k * 30], [.62, 700]], vow: [[0, 'u'], [.3, 'o']], amp: [[0, 0], [.04, .9], [.45, .9], [.62, 0]] })), 2);
+defClip('w_aww', WV({ dur: .8, f0: [[0, 760], [.3, 820], [.8, 600]], vow: [[0, 'a'], [.5, 'w'], [.8, 'u']], amp: [[0, 0], [.06, .9], [.55, .8], [.8, 0]], vib: [5.5, .045] }));
+defClip('w_yay', WV(k => ({ dur: .46, f0: [[0, 700 + k * 40], [.15, 980 + k * 40], [.46, 880]], vow: [[0, 'i'], [.06, 'a'], [.3, 'e'], [.46, 'i']] })), 2);
+defClip('w_trill', WV({ dur: .7, f0: [[0, 760], [.7, 900]], vow: [[0, 'u'], [.7, 'i']], trem: [17, .75], amp: [[0, 0], [.05, .9], [.6, .8], [.7, 0]] }));
+defClip('w_mwah', WV({ dur: .34, f0: [[0, 620], [.34, 860]], vow: [[0, 'm'], [.1, 'm'], [.13, 'w'], [.18, 'a']], amp: [[0, 0], [.03, .6], [.1, .6], [.14, 1], [.28, .8], [.34, 0]] }));
+defClip('w_nom', WV(k => ({ dur: .2, f0: [[0, 520 + k * 30], [.2, 480 + k * 30]], vow: [[0, 'm'], [.05, 'm'], [.08, 'o'], [.16, 'm']], amp: [[0, 0], [.01, .7], [.06, .4], [.08, 1], [.15, .8], [.2, 0]] })), 3);
+defClip('w_hmph', WV({ dur: .42, f0: [[0, 560], [.12, 600], [.42, 420]], vow: [[0, 'h'], [.08, 'm']], breath: [[0, .9], [.08, .3]], amp: [[0, 0], [.02, 1], [.3, .7], [.42, 0]] }));
+defClip('w_sigh', WV({ dur: .8, f0: [[0, 560], [.8, 400]], vow: [[0, 'h'], [.25, 'a'], [.8, 'h']], breath: [[0, .95], [.2, .5], [.8, .85]], amp: [[0, 0], [.1, .8], [.55, .55], [.8, 0]] }));
+defClip('w_hmm', WV({ dur: .6, f0: [[0, 520], [.3, 500], [.6, 680]], vow: [[0, 'm']], amp: [[0, 0], [.05, .7], [.45, .8], [.6, 0]] }));
+defClip('w_eek', WV(k => ({ dur: .38, f0: [[0, 1150 + k * 60], [.1, 1400 + k * 60], [.38, 1050]], vow: [[0, 'i']], drive: .3, vib: [11, .05], amp: [[0, 0], [.01, 1], [.3, .9], [.38, 0]] })), 2);
+defClip('w_hoohoo', WV({ dur: .6, f0: [[0, 620], [.18, 700], [.24, 640], [.32, 760], [.6, 680]], vow: [[0, 'h'], [.05, 'u'], [.24, 'h'], [.29, 'u']], breath: [[0, .4], [.05, .15], [.24, .5], [.29, .15]], amp: [[0, 0], [.02, .9], [.2, .9], [.24, .15], [.29, 1], [.5, .8], [.6, 0]] }));
+// she has her own "mouth": she can talk over him. Quieter the further she is from the camera.
+const SAYW = { src: null, end: 0, prio: 0 };
+function sayW(name, o) {
+  if (!OK()) return; o = o || {}; const t = aNow(), pr = o.prio || 1;
+  if (t < SAYW.end && pr < SAYW.prio) return;
+  if (SAYW.src && t < SAYW.end) { try { SAYW.src.stop(t + .02); } catch (e) { } }
+  const d = hyp(W.x, W.z, camera.position.x, camera.position.z), vol = (o.vol == null ? .8 : o.vol) * clamp(1.15 - d / 45, .12, 1);
+  const s = play('w_' + name, { vol, rate: (o.rate || 1) * rand(.96, 1.05), verb: .16, pan: clamp((W.x - camera.position.x) / 30, -.8, .8) });
+  if (s) { SAYW.src = s; SAYW.end = t + s.buffer.duration / s.playbackRate.value; SAYW.prio = pr; }
+}
 
 // say(): the dodo can only say one thing at a time; urgent noises interrupt chatter
 const SAY = { src: null, end: 0, prio: 0 };
@@ -4255,71 +4378,89 @@ function updateAudio(dtR) {
    - awake => no escape. It is faster than a honk and hiding does not help.
    ===================================================================== */
 function buildTiger() {
-  /* A chunky cartoon smilodon: deep chest, sloping back, cheek ruffs, ENORMOUS sabers, stubby tail.
+  /* v0.13 redesign: a proper smilodon, not a striped orange caterpillar.
+     Tawny coat with a darker saddle and soft leopard spots on the flanks only, huge shoulders sloping down
+     to small hips, a stubby bobtail, a broad heavy head, short round ears, and the sabers front and centre.
      Rig: torso splits into a front half and a rear half so the spine can flex when it gallops. */
   const root = new THREE.Group();
   const torso = new THREE.Group(); root.add(torso);
   const front = new THREE.Group(); front.position.z = .35; torso.add(front);
   const rear = new THREE.Group(); rear.position.z = -.25; torso.add(rear);
   const P = { front, rear };
-  const fur = toon(0xd98e3a), furL = toon(0xe8a85a), cream = toon(0xf7e8c8), stripe = toon(0x4e2c14), tooth = toon(0xfffcf0), nose = toon(0x5a3028),
-    pink = toon(0xe79a9a), mouth = toon(0x9e2a33), blk = new THREE.MeshBasicMaterial({ color: 0x1a120c });
-  const OL = .038;
-  // front half: deep chest + shoulders
-  part(front, GEO.sph, fur, [0, .05, .25], [.62, .66, .72], null, OL);
-  part(front, GEO.sph, cream, [0, -.28, .45], [.44, .4, .5]);
-  part(front, GEO.sph, furL, [0, .4, .18], [.5, .25, .45]);
-  // rear half: hips, belly, stubby tail
-  part(rear, GEO.sph, fur, [0, .02, -.3], [.56, .56, .72], null, OL);
-  part(rear, GEO.sph, cream, [0, -.28, -.1], [.4, .3, .55]);
-  for (let i = 0; i < 6; i++) { const host = i < 3 ? front : rear, z = i < 3 ? .5 - i * .3 : -.05 - (i - 3) * .3; part(host, GEO.sph, stripe, [0, .5 - Math.abs(z) * .1, z], [.5, .13, .07], [0, 0, 0]); }
-  [1, -1].forEach(sd => { for (let i = 0; i < 3; i++) part(rear, GEO.sph, stripe, [.45 * sd, .1, -.15 - i * .28], [.1, .26, .06], [0, 0, .35 * sd]); });
-  P.tail = new THREE.Group(); P.tail.position.set(0, .3, -.95); rear.add(P.tail);
-  part(P.tail, GEO.sph, fur, [0, .05, -.18], [.11, .11, .26], [.5, 0, 0], .025);
-  P.tailTip = new THREE.Group(); P.tailTip.position.set(0, .12, -.4); P.tail.add(P.tailTip);
-  part(P.tailTip, GEO.sph, stripe, [0, 0, -.06], [.1, .1, .14], null, .02);
-  // neck + head
+  const fur = toon(0xc98f52), furD = toon(0x9c6634), cream = toon(0xf3e3c2), spot = toon(0x6e4322), tooth = toon(0xfffbee), nose = toon(0x3c2720),
+    pink = toon(0xd98c86), mouth = toon(0x8e2430), blk = new THREE.MeshBasicMaterial({ color: 0x1a120c });
+  const OL = .036;
+  // front half: massive shoulders and chest, the "hump" above the forelegs
+  part(front, GEO.sph, fur, [0, .06, .22], [.66, .7, .74], null, OL);
+  part(front, GEO.sph, furD, [0, .5, .1], [.5, .26, .52]);
+  part(front, GEO.sph, cream, [0, -.26, .48], [.46, .4, .44]);
+  part(front, GEO.sph, fur, [0, -.02, -.38], [.56, .6, .58]);                    // waist: joins the halves (no segments)
+  part(front, GEO.sph, furD, [0, .4, -.4], [.4, .18, .5]);
+  // rear half: smaller, lower hips, belly, stubby bobtail
+  part(rear, GEO.sph, fur, [0, -.06, -.32], [.52, .54, .66], null, OL);
+  part(rear, GEO.sph, furD, [0, .3, -.3], [.36, .16, .5]);
+  part(rear, GEO.sph, cream, [0, -.32, -.08], [.38, .28, .52]);
+  // soft spots on the flanks and haunches only
+  const sr2 = mulberry(4242);
+  [1, -1].forEach(sd => {
+    for (let k = 0; k < 9; k++) { const host = k < 5 ? front : rear, z = k < 5 ? .3 - k * .2 : -.1 - (k - 5) * .18, y = .1 + sr2() * .3; part(host, GEO.sph, spot, [(.6 - Math.abs(z) * .12) * sd, y, z], [.03, .065 + sr2() * .03, .08 + sr2() * .03], [0, 0, .4 * sd]); }
+  });
+  P.tail = new THREE.Group(); P.tail.position.set(0, .28, -.92); rear.add(P.tail);
+  part(P.tail, GEO.sph, fur, [0, .04, -.1], [.13, .13, .18], [.7, 0, 0], .022);
+  P.tailTip = new THREE.Group(); P.tailTip.position.set(0, .1, -.22); P.tail.add(P.tailTip);
+  part(P.tailTip, GEO.sph, furD, [0, 0, -.03], [.1, .1, .1], null, .018);
+  // thick neck + broad heavy head
   P.neck = new THREE.Group(); P.neck.position.set(0, .3, .78); front.add(P.neck);
-  part(P.neck, GEO.sph, fur, [0, .05, .12], [.38, .4, .4], [-.4, 0, 0], OL);
-  P.head = new THREE.Group(); P.head.position.set(0, .26, .3); P.head.scale.setScalar(1.2); P.neck.add(P.head);
-  part(P.head, GEO.sph, fur, [0, .08, .12], [.46, .4, .42], null, OL);
-  [1, -1].forEach(sd => part(P.head, GEO.sph, cream, [.3 * sd, -.08, .16], [.2, .2, .22], null, OL * .8));   // cheek ruffs
-  part(P.head, GEO.sph, cream, [0, -.06, .45], [.27, .2, .24], null, OL * .8);                              // muzzle
-  part(P.head, GEO.sph, nose, [0, .06, .66], [.09, .06, .06]);
-  part(P.head, GEO.sph, stripe, [0, .4, .1], [.16, .05, .2]); [1, -1].forEach(sd => part(P.head, GEO.sph, stripe, [.22 * sd, .34, .06], [.05, .04, .16], [0, 0, .5 * sd]));
+  part(P.neck, GEO.sph, fur, [0, .05, .12], [.42, .44, .42], [-.4, 0, 0], OL);
+  part(P.neck, GEO.sph, cream, [0, -.16, .2], [.32, .28, .3]);
+  P.head = new THREE.Group(); P.head.position.set(0, .26, .3); P.head.scale.setScalar(1.22); P.neck.add(P.head);
+  part(P.head, GEO.sph, fur, [0, .1, .06], [.46, .35, .5], null, OL);
+  part(P.head, GEO.sph, furD, [0, .36, .02], [.3, .1, .3]);                         // brow ridge / forehead
+  [1, -1].forEach(sd => part(P.head, GEO.sph, cream, [.32 * sd, -.08, .02], [.16, .18, .18], [0, 0, .3 * sd], OL * .8));   // cheek ruffs
+  part(P.head, GEO.sph, cream, [0, -.06, .48], [.3, .21, .3], null, OL * .8);                                          // long broad muzzle
+  part(P.head, GEO.sph, fur, [0, .12, .4], [.22, .1, .26]);                                                              // bridge of the nose
+  part(P.head, GEO.sph, nose, [0, .08, .74], [.09, .06, .06]);
+  [1, -1].forEach(sd => { for (let k = 0; k < 3; k++) part(P.head, GEO.sphLo, spot, [.15 * sd, -.02 - k * .04, .7], [.012, .012, .012]); });   // whisker dots
   P.ears = [];
   [1, -1].forEach(sd => {
-    const e = new THREE.Group(); e.position.set(.28 * sd, .38, -.02); P.head.add(e);
-    part(e, GEO.cone, fur, [0, .1, 0], [.12, .22, .08], [0, 0, -.25 * sd], .022);
-    part(e, GEO.cone, pink, [.01 * sd, .08, .03], [.07, .14, .03], [0, 0, -.25 * sd]);
+    const e = new THREE.Group(); e.position.set(.3 * sd, .36, -.06); P.head.add(e);
+    part(e, GEO.sph, fur, [0, .06, 0], [.1, .09, .05], [0, 0, -.3 * sd], .02);
+    part(e, GEO.sph, pink, [0, .05, .025], [.06, .05, .025], [0, 0, -.3 * sd]);
+    part(e, GEO.sph, furD, [.02 * sd, .13, 0], [.05, .035, .035]);
     P.ears.push({ g: e, sd, tw: 0 });
   });
-  // the sabers (hang from the upper jaw), lower jaw opens for yawns and yowls
-  [1, -1].forEach(sd => { const sb = new THREE.Group(); sb.position.set(.1 * sd, -.16, .52); P.head.add(sb); part(sb, GEO.cone, tooth, [0, -.26, 0], [.055, .55, .06], [Math.PI - .1, 0, 0], .016); });
-  P.jaw = new THREE.Group(); P.jaw.position.set(0, -.18, .2); P.head.add(P.jaw);
-  part(P.jaw, GEO.sph, cream, [0, -.04, .2], [.2, .08, .24], null, .02);
-  part(P.jaw, GEO.sph, mouth, [0, .03, .2], [.16, .04, .2]);
+  // the SABERS: long, curved, thick at the root, hanging well below the chin
+  [1, -1].forEach(sd => {
+    const sb = new THREE.Group(); sb.position.set(.12 * sd, -.15, .58); P.head.add(sb);
+    part(sb, GEO.cyl, tooth, [0, -.15, 0], [.06, .32, .065], [-.06, 0, 0], .016);
+    part(sb, GEO.cone, tooth, [0, -.46, -.04], [.06, .34, .065], [Math.PI - .22, 0, 0], .014);
+  });
+  P.jaw = new THREE.Group(); P.jaw.position.set(0, -.18, .22); P.head.add(P.jaw);
+  part(P.jaw, GEO.sph, cream, [0, -.05, .22], [.22, .09, .28], null, .02);
+  part(P.jaw, GEO.sph, mouth, [0, .03, .2], [.18, .04, .2]);
   P.eyesOpen = []; P.eyesShut = [];
   [1, -1].forEach(sd => {
-    const o = new THREE.Group(); o.position.set(.17 * sd, .17, .44); P.head.add(o);
-    part(o, GEO.sph, toon(0xffe27a), [0, 0, 0], .085, null, .016);
+    const o = new THREE.Group(); o.position.set(.19 * sd, .19, .44); o.rotation.y = .3 * sd; P.head.add(o);
+    part(o, GEO.sph, toon(0xffd25a), [0, 0, 0], .085, null, .016);
     const pu = new THREE.Mesh(GEO.sph, blk); pu.scale.set(.026, .072, .03); pu.position.z = .068; o.add(pu);
-    part(P.head, GEO.sph, stripe, [.17 * sd, .27, .44], [.1, .022, .03], [0, 0, -.35 * sd]);                    // brow
-    const c = new THREE.Mesh(GEO.sph, blk); c.scale.set(.085, .014, .03); c.position.set(.17 * sd, .16, .5); c.rotation.z = .15 * sd; P.head.add(c);
+    part(P.head, GEO.sph, furD, [.19 * sd, .27, .47], [.12, .028, .04], [0, 0, .3 * sd]);                    // scowling brow
+    const c = new THREE.Mesh(GEO.sph, blk); c.scale.set(.085, .014, .03); c.position.set(.19 * sd, .18, .51); c.rotation.z = .15 * sd; P.head.add(c);
     P.eyesOpen.push(o); P.eyesShut.push(c);
   });
-  // legs: upper + lower + paw, front pair under the chest, back pair under the hips
+  // legs: powerful forelegs with big paws, smaller hind legs
   P.legs = [];
   [[1, true], [-1, true], [1, false], [-1, false]].forEach(([sd, isF]) => {
     const host = isF ? front : rear;
-    const up = new THREE.Group(); up.position.set(.36 * sd, -.12, isF ? .45 : -.45); host.add(up);
-    part(up, GEO.sph, fur, [0, -.2, 0], [.17, .3, .2], null, .028);
+    const up = new THREE.Group(); up.position.set((isF ? .38 : .34) * sd, -.12, isF ? .45 : -.45); host.add(up);
+    part(up, GEO.sph, fur, [0, -.2, 0], isF ? [.2, .34, .24] : [.2, .32, .26], null, .026);
     const lo = new THREE.Group(); lo.position.set(0, -.42, 0); up.add(lo);
-    part(lo, GEO.cyl, fur, [0, -.18, 0], [.11, .38, .11], null, .022);
-    part(lo, GEO.sph, cream, [0, -.4, .07], [.15, .08, .2], null, .02);
+    part(lo, GEO.cyl, fur, [0, -.18, 0], isF ? [.13, .38, .13] : [.11, .38, .11], null, .022);
+    part(lo, GEO.sph, cream, [0, -.4, .07], isF ? [.18, .09, .23] : [.15, .08, .2], null, .02);
+    for (let k = -1; k <= 1; k++) part(lo, GEO.sphLo, cream, [k * .07, -.41, .25], [.05, .045, .05]);
     P.legs.push({ up, lo, front: isF, sd });
   });
   root.traverse(o => { if (o.isMesh && o.material && o.material.side !== THREE.BackSide) o.castShadow = true; });
+  mergeRig(root, P);
   scene.add(root);
   return { root, torso, P };
 }
@@ -5084,10 +5225,11 @@ function updateWife(dt) {
   switch (W.state) {
     case 'sit': {
       W.x = NEST.x; W.z = NEST.z; W.y = NEST.y; W.speed = 0;
-      if (W.attn < 30 && W.popT <= 0) { W.popT = rand(5, 8); wPop(pick(['*sigh*', 'bored…', 'so… bored', 'is there anything shiny?']), 'small', 1.6); }
-      else if (W.belly < 25 && W.popT <= 0) { W.popT = rand(5, 8); wPop(pick(['*grumble*', 'hungry…', 'berry?']), 'small', 1.6); }
+      if (W.attn < 30 && W.popT <= 0) { W.popT = rand(5, 8); wPop(pick(['*sigh*', 'bored…', 'so… bored', 'is there anything shiny?']), 'small', 1.6); sayW('sigh'); }
+      else if (W.belly < 25 && W.popT <= 0) { W.popT = rand(5, 8); wPop(pick(['*grumble*', 'hungry…', 'berry?']), 'small', 1.6); sayW('hmm'); }
+      else if (W.popT <= 0 && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 5 && Math.random() < .3) { W.popT = rand(9, 15); sayW(pick(['trill', 'hoohoo'])); W.react = { kind: 'nod', t: 0, dur: .8 }; }
       if (W.graceT <= 0 && (W.attn <= 0 || W.belly <= 0)) {
-        W.why = W.belly <= 0 ? 'food' : 'bored'; wSet('getup', 1.1); say('huh', { prio: 3, rate: 1.35 });
+        W.why = W.belly <= 0 ? 'food' : 'bored'; wSet('getup', 1.1); sayW('hmph', { prio: 4 }); W.react = { kind: 'huff', t: 0, dur: 1 };
         wPop(W.why === 'food' ? 'I\'m getting a snack.' : 'BORED. Going for a walk.', 'big', 1.8); showBanner('DODA LEFT THE NEST!'); S.sting(); hint('wifeLeft');
       }
       break;
@@ -5097,7 +5239,7 @@ function updateWife(dt) {
       break;
     }
     case 'wander': {
-      if (lure) { wSet('follow'); wPop(Q.carrying.kind === 'berry' ? 'ooh, a berry ♥' : 'ooh… shiny ♥', 'nom', 1.4); say('ooh', { prio: 2, rate: 1.3 }); break; }
+      if (lure) { wSet('follow'); wPop(Q.carrying.kind === 'berry' ? 'ooh, a berry ♥' : 'ooh… shiny ♥', 'nom', 1.4); sayW('ooh', { prio: 3 }); break; }
       const t = W.target || (W.target = wifeTarget(W.why));
       const d = wifeMove(t.x, t.z, 1.35, dt);
       if (d < 1.6) {
@@ -5109,15 +5251,15 @@ function updateWife(dt) {
     }
     case 'stare': {
       W.speed = 0; if (W.target) W.heading += clamp(angDiff(W.heading, Math.atan2(W.target.x - W.x, W.target.z - W.z)), -3 * dt, 3 * dt);
-      if (lure) { wSet('follow'); wPop('…a BETTER shiny ♥', 'nom', 1.4); break; }
+      if (lure) { wSet('follow'); wPop('…a BETTER shiny ♥', 'nom', 1.4); sayW('ooh', { prio: 3 }); break; }
       if (W.popT <= 0) { W.popT = rand(6, 10); wPop(pick(['so pretty', 'mine', '…']), 'small blue', 1.4); }
       break;
     }
     case 'follow': {
-      if (!lure) { if (dD > 9 || !Q.carrying) { wSet('wander', 20); W.target = { x: W.x + rand(-2, 2), z: W.z + rand(-2, 2) }; if (W.popT <= 0) { W.popT = 3; wPop('hmph.', 'small', 1.2); } } }
+      if (!lure) { if (dD > 9 || !Q.carrying) { wSet('wander', 20); W.target = { x: W.x + rand(-2, 2), z: W.z + rand(-2, 2) }; if (W.popT <= 0) { W.popT = 3; wPop('hmph.', 'small', 1.2); sayW('hmph'); } } }
       const bx = D.pos.x - Math.sin(D.heading) * 1.7, bz = D.pos.z - Math.cos(D.heading) * 1.7;
       wifeMove(bx, bz, dD > 4 ? 4.6 : 3.2, dt);
-      if (hyp(W.x, W.z, NEST.x, NEST.z) < 2.6) { wSet('sit'); W.graceT = 6; W.attn = Math.max(W.attn, 25); W.belly = Math.max(W.belly, 15); wPop('home ♥', 'nom', 1.3); FX.hearts(NEST.x, NEST.y + 1.2, NEST.z); S.chime(1); }
+      if (hyp(W.x, W.z, NEST.x, NEST.z) < 2.6) { wSet('sit'); W.graceT = 6; W.attn = Math.max(W.attn, 25); W.belly = Math.max(W.belly, 15); wPop('home ♥', 'nom', 1.3); sayW('aww', { prio: 3 }); W.react = { kind: 'nod', t: 0, dur: 1 }; FX.hearts(NEST.x, NEST.y + 1.2, NEST.z); S.chime(1); }
       break;
     }
     case 'panic': {
@@ -5125,7 +5267,7 @@ function updateWife(dt) {
       if (W.stAge < 1.1) { W.speed *= .8; break; }
       if (lure) { wSet('follow'); break; }
       wifeMove(NEST.x, NEST.z, 4.2, dt);
-      if (hyp(W.x, W.z, NEST.x, NEST.z) < 2.6) { wSet('sit'); W.graceT = 6; W.attn = Math.max(W.attn, 15); W.belly = Math.max(W.belly, 10); wPop('phew', 'small', 1.2); }
+      if (hyp(W.x, W.z, NEST.x, NEST.z) < 2.6) { wSet('sit'); W.graceT = 6; W.attn = Math.max(W.attn, 15); W.belly = Math.max(W.belly, 10); wPop('phew', 'small', 1.2); sayW('sigh', { prio: 3 }); }
       break;
     }
   }
@@ -5136,17 +5278,19 @@ function giveToWife() {
   const it = Q.carrying; Q.carrying = null; DR.P.beakTip.remove(it.mesh);
   if (it.kind === 'berry') {
     shinies.splice(shinies.indexOf(it), 1); W.belly = Math.min(100, W.belly + WIFE.BERRY); Q.berries++; RUN.berriesGiven = (RUN.berriesGiven || 0) + 1;
-    wPop(pick(['nom! ♥', 'my hero', 'delicious ♥']), 'nom', 1.4); S.chomp(.4);
+    wPop(pick(['nom! ♥', 'my hero', 'delicious ♥']), 'nom', 1.4); S.chomp(.4); sayW('nom', { prio: 5 }); setTimeout(() => sayW(pick(['mwah', 'trill']), { prio: 5 }), 650);
+    W.react = { kind: 'munch', t: 0, dur: 1.6 };
   } else {
     it.state = 'nest'; const i = Q.delivered, a = i * 2.39996;
     it.mesh.position.set(NEST.x + Math.cos(a) * (1.0 + (i % 2) * .2), NEST.y + .42, NEST.z + Math.sin(a) * (1.0 + (i % 2) * .2)); it.mesh.scale.set(.9, .7, .9);
     scene.add(it.mesh); nestPile.push(it.mesh); if (nestPile.length > 10) scene.remove(nestPile.shift());
     W.attn = Math.min(100, W.attn + WIFE.SHINY); Q.delivered++; RUN.shiny = (RUN.shiny || 0) + 1;
     Q.respawn.push(G.time + rand(12, 20));
-    wPop(pick(['SHINY! ♥', 'for ME?!', 'ooh ♥ ♥', 'he remembered!']), 'big', 1.5);
+    wPop(pick(['SHINY! ♥', 'for ME?!', 'ooh ♥ ♥', 'he remembered!']), 'big', 1.5); sayW(pick(['yay', 'ooh']), { prio: 5 }); setTimeout(() => sayW(pick(['mwah', 'aww', 'trill']), { prio: 5 }), 700);
+    W.react = { kind: 'delight', t: 0, dur: 1.8 };
     for (let k = 0; k < 14; k++) FX.sparkle(NEST.x, NEST.y + .3, NEST.z, 1, .85, .35);
   }
-  S.chime(1); say('woohoo', { prio: 3 }); FX.hearts(NEST.x, NEST.y + 1.2, NEST.z);
+  S.chime(1); setTimeout(() => say('woohoo', { prio: 3 }), 250); FX.hearts(NEST.x, NEST.y + 1.2, NEST.z);
 }
 
 /* ---- the T-rex and Doda ---- */
@@ -5161,7 +5305,7 @@ function rexWifeBrain(r, dt, P, seesHim) {
   const passive = ['roam', 'scan', 'investigate', 'search', 'sniffBush'].indexOf(r.state) >= 0;
   if (passive && G.mode === 'play' && r.graceT <= 0 && rexSeesWife(r, P)) {
     setR(r, 'alertW', 1.1); r.roared = false; r.wLastSeen = G.time;
-    if (W.state !== 'panic') { wSet('panic'); wPop('EEK!', 'big red', 1.2); say('scream', { prio: 6, rate: 1.4 }); }
+    if (W.state !== 'panic') { wSet('panic'); wPop('EEK!', 'big red', 1.2); sayW('eek', { prio: 6 }); }
     showBanner('IT SEES DODA!'); hint('wifeHunted');
   }
   if (r.state !== 'alertW' && r.state !== 'stalkW' && r.state !== 'windW' && r.state !== 'lungeW') return false;
@@ -5214,7 +5358,7 @@ function killWife(kind, r) {
   D.dead = true; D.deadT = 0; D.deathKind = kind === 'egg' ? 'egg' : 'wife'; D.stateAtDeath = D.state;
   G.mode = 'dying'; G.deathT = 0; G.deathKind = D.deathKind; G.killer = null; G.tigerKiller = null; G.wifeKiller = r || null; G.captured = false; G.deathEv = null;
   G.captureAt = kind === 'egg' ? 1.2 : 1.0;
-  if (r) { setR(r, 'eat', 9); r.speed = 0; G.ts = .25; G.slowT = .8; S.chomp(1.1); say('scream', { prio: 9, rate: 1.4 }); G.shake = 1; flash(.6); FX.feathers(W.x, W.y + .8, W.z, 34, 1.3); const m = rexMouth(r); popup('CHOMP!', m.x, m.y + 3.2, m.z, 'huge', 1.4, .5); }
+  if (r) { setR(r, 'eat', 9); r.speed = 0; G.ts = .25; G.slowT = .8; S.chomp(1.1); sayW('eek', { prio: 9 }); say('scream', { prio: 9 }); G.shake = 1; flash(.6); FX.feathers(W.x, W.y + .8, W.z, 34, 1.3); const m = rexMouth(r); popup('CHOMP!', m.x, m.y + 3.2, m.z, 'huge', 1.4, .5); }
   else { S.thud(); popup('…', NEST.x, NEST.y + 1.6, NEST.z, 'big blue', 2); }
   W.state = 'dead';
   D.cause = kind === 'egg' ? pick(['The egg got cold. Doda was busy staring at a rock.', 'Nobody sat on the egg. Turns out that matters.', 'Cold egg. Last one on Earth. No pressure.'])
@@ -5255,9 +5399,19 @@ function animWife(dt, t) {
   if (st === 'sleep') { hp = .55; hy = .3; }
   W.look += (hy - W.look) * Math.min(1, dt * 4);
   P.neck.rotation.y = W.look * .5; P.head.rotation.y = W.look * .5; P.neck.rotation.x = hp * .5; P.head.rotation.x = hp * .6;
-  const flap = st === 'panic' ? 1.4 + Math.sin(t * 30) * .6 : (st === 'follow' ? .3 + Math.sin(t * 9) * .2 : 0);
+  let flap = st === 'panic' ? 1.4 + Math.sin(t * 30) * .6 : (st === 'follow' ? .3 + Math.sin(t * 9) * .2 : 0), jaw = st === 'panic' ? .5 : 0;
+  // reactions: she nods, flutters, hops and coos when he brings her something
+  const rc = W.react;
+  if (rc) {
+    rc.t += dt; const k = rc.t / rc.dur, env = Math.sin(Math.min(1, k) * Math.PI);
+    if (rc.kind === 'delight' || rc.kind === 'nod') { const nod = Math.sin(rc.t * 13) * .32 * env; P.neck.rotation.x += nod; P.head.rotation.x += nod * 1.2; }
+    if (rc.kind === 'delight') { flap = Math.max(flap, (.9 + Math.sin(rc.t * 26) * .5) * env); R.bob.position.y += Math.abs(Math.sin(rc.t * 9)) * .16 * env; jaw = .35 * env; P.tuft.scale.y = 1 + .5 * env; }
+    if (rc.kind === 'munch') { P.head.rotation.x += .35 * env; jaw = Math.max(0, Math.sin(rc.t * 16)) * .5 * env; flap = Math.max(flap, .25 * env); }
+    if (rc.kind === 'huff') { P.head.rotation.y += Math.sin(rc.t * 8) * .5 * env; P.head.rotation.x -= .25 * env; }
+    if (k >= 1) { W.react = null; P.tuft.scale.y = 1; }
+  }
   P.wingL.rotation.z = -flap; P.wingR.rotation.z = flap;
-  P.jaw.rotation.x = st === 'panic' ? .5 : 0;
+  P.jaw.rotation.x = jaw;
   W.blinkT -= dt; const bl = W.blinkT < .12 ? .1 : 1; if (W.blinkT < 0) W.blinkT = rand(2, 5);
   P.eyes.forEach(e => { e.g.scale.y = st === 'sleep' ? .1 : bl; });
   if (sitting && Math.random() < dt * .25 && st === 'sit') P.tail.rotation.y = rand(-.4, .4);
@@ -5279,7 +5433,7 @@ function hatchTick(dtR) {
   if (T < 2.6 && egg) { egg.rotation.z = Math.sin(T * (8 + T * 6)) * .18 * Math.min(1, T); if (Math.random() < dtR * 3) popup(pick(['crk', 'tap tap', '!']), NEST.x, NEST.y + 1.2, NEST.z, 'small', .8); }
   if (T > 2.6 && egg && egg.visible) {
     egg.visible = false; S.pop(); S.chime(1); FX.hearts(NEST.x, NEST.y + 1.4, NEST.z); for (let k = 0; k < 24; k++) FX.sparkle(NEST.x, NEST.y + .5, NEST.z, 1, .95, .6);
-    BABY.root.visible = true; popup('peep!', NEST.x, NEST.y + 1.6, NEST.z, 'big', 1.6); say('yay', { prio: 9, rate: 1.8 }); showBanner('IT HATCHED!', true); S.jingle();
+    BABY.root.visible = true; popup('peep!', NEST.x, NEST.y + 1.6, NEST.z, 'big', 1.6); say('yay', { prio: 9, rate: 1.8 }); setTimeout(() => sayW('aww', { prio: 9 }), 500); showBanner('IT HATCHED!', true); S.jingle();
   }
   if (BABY && BABY.root.visible) {
     BABY.root.position.set(NEST.x, NEST.y + .3 + Math.abs(Math.sin(T * 6)) * .18, NEST.z);
@@ -5287,6 +5441,202 @@ function hatchTick(dtR) {
   }
 }
 function hideBaby() { if (BABY) BABY.root.visible = false; G.hatching = false; }
+
+/* =====================================================================
+   5g_perf (v0.13): performance dashboard, dynamic resolution, graphics presets.
+   Open it: Settings → Performance dashboard, or press F3 / ` (backtick), or add ?perf to the URL.
+   - Frame time graph, FPS, 1% low
+   - CPU time per pipeline stage: brains (AI), world, animation, camera+HUD, audio, render submit
+   - GPU time per frame (when the browser exposes the GPU timer)
+   - Pixels: canvas size, pixel ratio, megapixels, dynamic resolution scale
+   - Scene: draw calls, triangles, shaders, textures
+   - "Profile pipeline": renders the same frame with each piece switched off, and at quarter pixels,
+     so you can see exactly what each piece costs and how much of the frame scales with pixels.
+   - "Copy report": everything above as text, to paste to a developer.
+   ===================================================================== */
+const PD = { el: null, open: false, hist: new Float32Array(240), hi: 0, ema: 1 / 60, stages: {}, gpuMs: -1, q: [], bench: null, lastUi: 0, drsT: 0, drsLock: 0, goodT: 0, ui: {} };
+const GLX = (() => {
+  const gl = renderer.getContext(), isGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+  const ext = isGL2 ? gl.getExtension('EXT_disjoint_timer_query_webgl2') : null;
+  let gpuName = '';
+  try { const dbg = gl.getExtension('WEBGL_debug_renderer_info'); gpuName = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (e) { }
+  return { gl, isGL2, ext, gpuName, px: new Uint8Array(4) };
+})();
+const STAGES = [['brains', 'Brains (AI)', '#ffc23a'], ['world', 'World', '#7fc46a'], ['anim', 'Animation + FX', '#2fa9c2'], ['hud', 'Camera + HUD', '#c792ea'], ['audio', 'Audio', '#ff9a3d'], ['render', 'Render (CPU)', '#e8434f']];
+
+/* ---- per-frame hooks (called from 6_main) ---- */
+function perfFrameBegin() { PERF.start(); if (PERF.on && GLX.ext && !PD.qOpen) { const q = GLX.gl.createQuery(); GLX.gl.beginQuery(GLX.ext.TIME_ELAPSED_EXT, q); PD.qOpen = q; } }
+function perfFrameEnd(raw) {
+  // GPU timer: close this frame's query, read finished ones (results arrive a few frames later)
+  if (PD.qOpen) { GLX.gl.endQuery(GLX.ext.TIME_ELAPSED_EXT); PD.q.push(PD.qOpen); PD.qOpen = null; }
+  while (PD.q.length) {
+    const q = PD.q[0], gl = GLX.gl;
+    if (!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)) break;
+    const disjoint = gl.getParameter(GLX.ext.GPU_DISJOINT_EXT), ns = gl.getQueryParameter(q, gl.QUERY_RESULT);
+    PD.gpuN = (PD.gpuN || 0) + 1;
+    if (!disjoint && PD.gpuN > 5 && ns / 1e6 < 500) PD.gpuMs = PD.gpuMs < 0 ? ns / 1e6 : PD.gpuMs + (ns / 1e6 - PD.gpuMs) * .1;
+    gl.deleteQuery(q); PD.q.shift();
+  }
+  if (raw > .25 || document.hidden) return;   // tab switch, not a real frame
+  PD.hist[PD.hi] = raw * 1000; PD.hi = (PD.hi + 1) % PD.hist.length;
+  PD.ema += (raw - PD.ema) * .06;
+  if (PERF.on) { PERF.frames++; for (const k in PERF.acc) { if (PERF.acc[k] > 250) PERF.acc[k] = PD.stages[k] || 0; PD.stages[k] = (PD.stages[k] || 0) + (PERF.acc[k] - (PD.stages[k] || 0)) * .08; PERF.acc[k] = 0; } }
+  drsUpdate(raw);
+  if (PD.open && performance.now() - PD.lastUi > 250) { PD.lastUi = performance.now(); perfUi(); }
+}
+
+/* ---- dynamic resolution (Auto and Battery saver) ----
+   Too slow for a second → render 12% fewer pixels per side. Smooth and steady for a while → try 7% more.
+   On a 60Hz screen frames are capped at 16.7ms, so "steady near 16.7" is treated as headroom to probe. */
+function drsUpdate(raw) {
+  if (!gfxP().drs || G.mode === 'title' || PERF.bench) return;
+  PD.drsT += raw; PD.drsLock -= raw;
+  if (PD.drsT < 1) return; PD.drsT = 0;
+  const ms = PD.ema * 1000;
+  if (ms > 19.5 && GFX.scale > .5) { GFX.scale = Math.max(.5, GFX.scale * .88); PD.drsLock = 8; PD.goodT = 0; applyGfx(); }
+  else if (ms < 18 && GFX.scale < 1 && PD.drsLock <= 0) { PD.goodT++; if (PD.goodT >= 4) { PD.goodT = 0; GFX.scale = Math.min(1, GFX.scale * 1.07); applyGfx(); } }
+  else PD.goodT = 0;
+}
+function applyGfx() {
+  const r = gfxRatio(); if (Math.abs(r - GFX.ratio) < .01) return;
+  GFX.ratio = r; renderer.setPixelRatio(r); renderer.setSize(window.innerWidth, window.innerHeight); if (typeof setPointScale === 'function') setPointScale();
+}
+function setGfxPreset(p) {
+  if (!GFX_PRESETS[p]) return;
+  const before = GFX_PRESETS[GFX.preset]; GFX.preset = p; GFX.scale = 1; const P = gfxP();
+  try { localStorage.setItem('dodo_gfx', p); } catch (e) { }
+  if (before.soft !== P.soft) { renderer.shadowMap.type = P.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); }
+  const sz = P.shadow === 2048 && COARSE ? 1024 : P.shadow;
+  if (sun.shadow.mapSize.x !== sz) { sun.shadow.mapSize.set(sz, sz); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  for (const g of GRASS_MESHES) g.receiveShadow = P.grassShadow;
+  GFX.ratio = 0; applyGfx();
+}
+
+/* ---- the dashboard ---- */
+function perfBuild() {
+  const el = PD.el = document.createElement('div'); el.id = 'perf'; el.hidden = true;
+  el.innerHTML = `<div class="pf-head"><b id="pfFps">--</b><span>fps</span><span id="pfMs" class="pf-dim"></span><span class="pf-sp"></span>
+      <button id="pfMin" aria-label="Collapse">–</button><button id="pfX" aria-label="Close">×</button></div>
+    <div class="pf-body"><canvas id="pfGraph" width="300" height="54"></canvas>
+    <div class="pf-sec">CPU per frame (pipeline)</div><div id="pfStages"></div>
+    <div class="pf-row"><span>GPU per frame</span><b id="pfGpu"></b></div>
+    <div class="pf-sec">Pixels</div><div id="pfPix"></div>
+    <div class="pf-sec">Scene</div><div id="pfScene"></div>
+    <div class="pf-sec">Profile <span class="pf-dim">(what each piece costs)</span></div><div id="pfBench" class="pf-dim">Press Profile pipeline. Takes ~5 seconds; the game pauses.</div>
+    <div class="pf-btns"><button id="pfRun">Profile pipeline</button><button id="pfCopy">Copy report</button></div></div>`;
+  document.body.appendChild(el);
+  ['pfFps', 'pfMs', 'pfGraph', 'pfStages', 'pfGpu', 'pfPix', 'pfScene', 'pfBench'].forEach(id => PD.ui[id] = el.querySelector('#' + id));
+  el.querySelector('#pfX').addEventListener('click', () => perfShow(false));
+  el.querySelector('#pfMin').addEventListener('click', () => el.classList.toggle('min'));
+  el.querySelector('#pfRun').addEventListener('click', () => profilePipeline());
+  el.querySelector('#pfCopy').addEventListener('click', () => copyReport());
+  el.addEventListener('pointerdown', e => e.stopPropagation());
+}
+function perfShow(on) {
+  if (!PD.el) perfBuild();
+  PD.open = on; PERF.on = on; PD.el.hidden = !on;
+  try { localStorage.setItem('dodo_perf', on ? '1' : '0'); } catch (e) { }
+  const t = $('optPerf'); if (t) t.checked = on;
+  if (on) perfUi();
+}
+function fstats() {
+  const a = Array.from(PD.hist).filter(v => v > 0).sort((x, y) => x - y); if (!a.length) return { avg: 0, low1: 0, p50: 0 };
+  const avg = a.reduce((s, v) => s + v, 0) / a.length, worst = a.slice(Math.floor(a.length * .99));
+  return { avg, p50: a[Math.floor(a.length / 2)], low1: worst.reduce((s, v) => s + v, 0) / worst.length };
+}
+function pixInfo() {
+  const c = renderer.domElement, w = c.width, h = c.height;
+  return { w, h, mp: w * h / 1e6, cssW: window.innerWidth, cssH: window.innerHeight, ratio: GFX.ratio, dpr: DPR, scale: GFX.scale, native: window.innerWidth * window.innerHeight * DPR * DPR / 1e6 };
+}
+function perfUi() {
+  const U = PD.ui, s = fstats();
+  U.pfFps.textContent = s.avg ? Math.round(1000 / s.avg) : '--';
+  U.pfFps.style.color = s.avg < 18 ? '#7fe07a' : s.avg < 28 ? '#ffc23a' : '#ff6a5a';
+  U.pfMs.textContent = `${s.avg.toFixed(1)} ms avg · 1% low ${s.low1 ? Math.round(1000 / s.low1) : '--'} fps`;
+  // frame-time graph with 60fps and 30fps lines
+  const g = U.pfGraph.getContext('2d'), W = 300, H = 54, top = 50;
+  g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(0, 0, W, H);
+  [[16.7, '60'], [33.3, '30']].forEach(([v, l]) => { const y = H - v / top * H; g.strokeStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '9px monospace'; g.fillText(l, W - 14, y - 2); });
+  const n = PD.hist.length;
+  for (let i = 0; i < n; i++) { const v = PD.hist[(PD.hi + i) % n]; if (!v) continue; const hh = Math.min(H, v / top * H); g.fillStyle = v < 18 ? '#7fe07a' : v < 34 ? '#ffc23a' : '#ff6a5a'; g.fillRect(i * W / n, H - hh, W / n + .5, hh); }
+  // stages
+  let tot = 0; for (const [k] of STAGES) tot += PD.stages[k] || 0;
+  U.pfStages.innerHTML = STAGES.map(([k, label, col]) => { const v = PD.stages[k] || 0; return `<div class="pf-row"><span><i style="background:${col}"></i>${label}</span><span class="pf-bar"><i style="width:${Math.min(100, v / 16.7 * 100).toFixed(1)}%;background:${col}"></i></span><b>${v.toFixed(2)}</b></div>`; }).join('') +
+    `<div class="pf-row pf-tot"><span>Total CPU</span><span></span><b>${tot.toFixed(2)}</b></div>`;
+  U.pfGpu.textContent = PD.gpuMs >= 0 ? PD.gpuMs.toFixed(2) + ' ms' : (GLX.ext ? 'measuring…' : 'not exposed by this browser (use Profile)');
+  const p = pixInfo();
+  U.pfPix.innerHTML = `<div class="pf-row"><span>Canvas</span><b>${p.w} × ${p.h} (${p.mp.toFixed(2)} MP)</b></div>
+    <div class="pf-row"><span>Native screen</span><b>${p.native.toFixed(2)} MP @ ${p.dpr.toFixed(2)}x</b></div>
+    <div class="pf-row"><span>Pixel ratio</span><b>${p.ratio.toFixed(2)} (budget ${gfxP().mp} MP)</b></div>
+    <div class="pf-row"><span>Graphics</span><b>${gfxP().label}${gfxP().drs ? ' · res ' + Math.round(p.scale * 100) + '%' : ''}</b></div>`;
+  const ri = renderer.info;
+  U.pfScene.innerHTML = `<div class="pf-row"><span>Draw calls</span><b>${ri.render.calls}</b></div><div class="pf-row"><span>Triangles</span><b>${(ri.render.triangles / 1000).toFixed(0)}k</b></div>
+    <div class="pf-row"><span>Shaders · textures · meshes</span><b>${ri.programs.length} · ${ri.memory.textures} · ${ri.memory.geometries}</b></div>
+    <div class="pf-row"><span>Shadows</span><b>${renderer.shadowMap.type === THREE.PCFSoftShadowMap ? 'soft' : 'standard'} ${sun.shadow.mapSize.x}px</b></div>`;
+}
+
+/* ---- pipeline profiler ---- */
+function syncRender() { const t = performance.now(); renderer.render(scene, camera); const gl = GLX.gl; gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, GLX.px); return performance.now() - t; }
+function timeIt(frames) { for (let i = 0; i < 3; i++) syncRender(); const a = []; for (let i = 0; i < frames; i++) a.push(syncRender()); a.sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; }
+async function profilePipeline() {
+  if (PERF.bench) return;
+  const U = PD.ui; PERF.bench = true; U.pfBench.textContent = 'Profiling…';
+  const wait = () => new Promise(r => setTimeout(r, 30));
+  const chars = [DR.root, WR.root, ...rexes.map(r => r.rig.root), ...tigers.map(t => t.rig.root)];
+  const vis = list => list.map(o => o.visible), setVis = (list, v) => list.forEach((o, i) => o.visible = Array.isArray(v) ? v[i] : v);
+  const treeG = trees.map(t => t.grp), out = [];
+  const cases = [
+    ['Everything', () => { }, () => { }],
+    ['No shadows', () => { sun.castShadow = false; }, () => { sun.castShadow = true; }],
+    ['No grass', () => setVis(GRASS_MESHES, false), v => setVis(GRASS_MESHES, true)],
+    ['No trees', () => { PD._tv = vis(treeG); setVis(treeG, false); }, () => setVis(treeG, PD._tv)],
+    ['No characters', () => { PD._cv = vis(chars); setVis(chars, false); }, () => setVis(chars, PD._cv)],
+    ['No water', () => { WATER_REF.mesh.visible = false; }, () => { WATER_REF.mesh.visible = true; }],
+    ['Quarter pixels', () => { PD._r = GFX.ratio; renderer.setPixelRatio(GFX.ratio / 2); renderer.setSize(innerWidth, innerHeight); }, () => { renderer.setPixelRatio(PD._r); renderer.setSize(innerWidth, innerHeight); }]
+  ];
+  try {
+    for (const [name, on, off] of cases) { on(); await wait(); const ms = timeIt(14); const calls = renderer.info.render.calls, tris = renderer.info.render.triangles; off(); out.push({ name, ms, calls, tris }); U.pfBench.textContent = 'Profiling… ' + name; await wait(); }
+  } finally { PERF.bench = false; }
+  const base = out[0].ms, q = out[out.length - 1].ms, p = pixInfo();
+  const pixShare = clamp((base - q) / (base * .75), 0, 1);
+  PD.bench = { out, base, pixShare, nsPerPx: (base - q) * 1e6 / (p.w * p.h * .75), when: new Date().toISOString(), p };
+  U.pfBench.innerHTML = out.map((r, i) => `<div class="pf-row"><span>${r.name}</span><b>${r.ms.toFixed(2)} ms${i ? ` <em>${r.ms <= base ? '−' : '+'}${Math.abs(base - r.ms).toFixed(2)}</em>` : ''}</b></div>`).join('') +
+    `<div class="pf-note">${Math.round(pixShare * 100)}% of the frame scales with pixel count${pixShare > .55 ? ' → resolution is the bottleneck (lower Graphics or keep Auto)' : pixShare < .25 ? ' → not pixel-bound; scene complexity or CPU is' : ''}.</div>`;
+}
+function reportText() {
+  const s = fstats(), p = pixInfo(), ri = renderer.info, L = [];
+  L.push('SAVE THE DODO — performance report', new Date().toString(), '');
+  L.push(`Device: ${navigator.userAgent}`, `GPU: ${GLX.gpuName || 'unknown'} · WebGL${GLX.isGL2 ? '2' : '1'} · GPU timer: ${GLX.ext ? 'yes' : 'no'}`);
+  L.push(`Screen: ${p.cssW}×${p.cssH} css @ ${p.dpr}x (${p.native.toFixed(2)} MP native)`, `Canvas: ${p.w}×${p.h} = ${p.mp.toFixed(2)} MP · pixel ratio ${p.ratio.toFixed(2)} · graphics ${gfxP().label} · DRS scale ${Math.round(p.scale * 100)}%`, '');
+  L.push(`Frame: ${s.avg.toFixed(2)} ms avg (${s.avg ? Math.round(1000 / s.avg) : 0} fps) · median ${s.p50.toFixed(2)} · 1% low ${s.low1.toFixed(2)} ms`);
+  L.push('CPU per stage (ms): ' + STAGES.map(([k, l]) => `${l} ${(PD.stages[k] || 0).toFixed(2)}`).join(' · '));
+  L.push(`GPU per frame: ${PD.gpuMs >= 0 ? PD.gpuMs.toFixed(2) + ' ms' : 'n/a'}`);
+  L.push(`Scene: ${ri.render.calls} draw calls · ${ri.render.triangles} triangles · ${ri.programs.length} shaders · ${ri.memory.textures} textures · shadows ${renderer.shadowMap.type === THREE.PCFSoftShadowMap ? 'soft' : 'standard'} ${sun.shadow.mapSize.x}px`, '');
+  if (PD.bench) { L.push(`Profile (median of 14 synced frames, ${PD.bench.when}):`); PD.bench.out.forEach(r => L.push(`  ${r.name.padEnd(15)} ${r.ms.toFixed(2)} ms  (${r.calls} calls, ${r.tris} tris)`)); L.push(`  Pixel-bound share: ${Math.round(PD.bench.pixShare * 100)}% · ~${PD.bench.nsPerPx.toFixed(1)} ns per pixel`); }
+  else L.push('Profile: not run (press "Profile pipeline" first for per-piece costs).');
+  return L.join('\n');
+}
+function copyReport() {
+  const t = reportText(), b = PD.el.querySelector('#pfCopy');
+  const done = ok => { b.textContent = ok ? 'Copied!' : 'Select & copy below'; setTimeout(() => b.textContent = 'Copy report', 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => done(true), () => fallback());
+  else fallback();
+  function fallback() { let ta = PD.el.querySelector('textarea'); if (!ta) { ta = document.createElement('textarea'); ta.className = 'pf-ta'; PD.el.querySelector('.pf-body').appendChild(ta); } ta.value = t; ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { } done(ok); }
+}
+
+/* ---- settings wiring ---- */
+(function gfxSettings() {
+  const sel = $('optGfx'), note = $('gfxNote');
+  Object.keys(GFX_PRESETS).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = GFX_PRESETS[k].label; sel.appendChild(o); });
+  const sync = () => { sel.value = GFX.preset; note.textContent = gfxP().note; };
+  sel.addEventListener('change', () => { setGfxPreset(sel.value); sync(); });
+  sel.addEventListener('keydown', e => e.stopPropagation());
+  $('optPerf').addEventListener('change', e => perfShow(e.target.checked));
+  sync();
+  let want = /[?&]perf\b/.test(location.search); try { want = want || localStorage.getItem('dodo_perf') === '1'; } catch (e) { }
+  if (want) perfShow(true);
+})();
+window.addEventListener('keydown', e => { if ((e.key === 'F3' || e.key === '`') && !e.repeat) { e.preventDefault(); perfShow(!PD.open); } });
 
 /* =====================================================================
    6_main: input, loop, sequencing, tuning rack
@@ -5459,7 +5809,7 @@ $('bestLine').textContent = bestLine();
 })();
 
 /* resize */
-function onResize() { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth / window.innerHeight; camera.fov = camera.aspect < 1 ? CAM.fovPort : CAM.fovLand; camera.updateProjectionMatrix(); setPointScale(); }
+function onResize() { GFX.ratio = gfxRatio(); renderer.setPixelRatio(GFX.ratio); renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth / window.innerHeight; camera.fov = camera.aspect < 1 ? CAM.fovPort : CAM.fovLand; camera.updateProjectionMatrix(); setPointScale(); }
 window.addEventListener('resize', onResize); onResize();
 
 /* ---------------- title-screen attract mode ---------------- */
@@ -5468,27 +5818,18 @@ D.pos.set(NEST.x, NEST.y, NEST.z + 1.6);
 
 /* ---------------- main loop ---------------- */
 const clock = new THREE.Clock();
-/* adaptive quality: if the device can't keep up, render fewer pixels / cheaper shadows */
-const QUAL = { ema: 1 / 60, slowT: 0, level: 0 };
-function adaptQuality(raw) {
-  if (G.mode !== 'play') return;
-  QUAL.ema += (raw - QUAL.ema) * .05;
-  QUAL.slowT = QUAL.ema > .03 ? QUAL.slowT + raw : 0;
-  if (QUAL.slowT > 2.5 && QUAL.level < 3) {
-    QUAL.level++; QUAL.slowT = 0; QUAL.ema = 1 / 60;
-    if (QUAL.level === 1) renderer.setPixelRatio(Math.max(1, renderer.getPixelRatio() - .5));
-    if (QUAL.level === 2) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } renderer.shadowMap.type = THREE.PCFShadowMap; }
-    if (QUAL.level === 3) renderer.setPixelRatio(Math.max(.75, renderer.getPixelRatio() - .25));
-    onResize();
-  }
-}
+const QUAL = { level: 0 };   // (v0.13: replaced by graphics presets + dynamic resolution, see 5g_perf)
 function frame() {
   requestAnimationFrame(frame);
   const raw = clock.getDelta(), dtR = Math.min(.05, raw);
-  adaptQuality(Math.min(raw, .2));
+  if (PERF.bench) return;            // the pipeline profiler is rendering frames itself
+  perfFrameBegin();
   tick(dtR);
   renderer.render(scene, camera);
+  PERF.lap('render');
+  // the polaroid must be grabbed in the same frame it was drawn (the canvas isn't kept between frames)
   if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); }
+  perfFrameEnd(raw);
 }
 function tick(dtR) {
   G.realT += dtR;
@@ -5566,6 +5907,7 @@ function tick(dtR) {
     hatchTick(dtR);
   }
   if (G.mode !== 'dying' && G.mode !== 'dead') { DR.root.visible = true; DR.root.rotation.z = 0; DR.root.rotation.x = 0; }
+  PERF.lap('brains');
 
   // environment
   const df = G.mode === 'title' ? .3 + Math.sin(t * .05) * .05 : (G.mode === 'intro' && G.day === 1 ? Math.max(0, G.dayT / G.dayLen) : G.dayT / G.dayLen);
@@ -5573,6 +5915,7 @@ function tick(dtR) {
   glow.position.set(D.pos.x, D.y + 2.2, D.pos.z); glow.intensity = ENV.night * 1.2;
   if (G.mode !== 'paused') { updateWorld(dt, t); updateShinies(dt, t); updatePoops(dt); updateLife(dt, t); }
   updateAmbience();
+  PERF.lap('world');
 
   // animate characters
   D.control += (D.ctrlTarget - D.control) * Math.min(1, dtR * 10);
@@ -5604,15 +5947,18 @@ function tick(dtR) {
   if (sb) { snackRing.position.set(sb.x, groundH(sb.x, sb.z) + .1, sb.z); snackRing.material.opacity = .55 + Math.sin(t * 12) * .35; const s = 1 + Math.sin(t * 12) * .08; snackRing.scale.set(s, s, s); }
 
   PS.update(dt); PA.update(dt); updateRings(dt); updatePrints(dt);
+  PERF.lap('anim');
   updateCamInput(dtR);
   updateCamera(dtR);
   updatePops(dtR);
   updateHUD(dtR);
   updateObjective(dtR);
+  PERF.lap('hud');
   updateAudio(dtR);
+  PERF.lap('audio');
 }
 frame();
-window.__dodo = { scene, trees, W, get WIFE_HOOKS() { return { wifeOff, killWife }; }, G, D, rexes, RUN, TUN, butterflies, crystals, rocks, groundH, A, RAW, S, say, newRun, kill, input, bb: berryBushes, bushes, tigers, Q, shinies, quota, NEST, step(n, dt) { for (let i = 0; i < n; i++) tick(dt || 1 / 60); }, QUAL, cam: camera, DR, render: () => { renderer.render(scene, camera); if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); } }, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, progs: renderer.info.programs.length }) };
+window.__dodo = { clip: (n, k) => clipData(n, k || 0), scene, trees, W, perfReport: () => reportText(), PD, get WIFE_HOOKS() { return { wifeOff, killWife }; }, G, D, rexes, RUN, TUN, butterflies, crystals, rocks, groundH, A, RAW, S, say, newRun, kill, input, bb: berryBushes, bushes, tigers, Q, shinies, quota, NEST, step(n, dt) { for (let i = 0; i < n; i++) tick(dt || 1 / 60); }, QUAL, cam: camera, DR, render: () => { renderer.render(scene, camera); if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); } }, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, progs: renderer.info.programs.length }) };
 
 })();
 </script>
