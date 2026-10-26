@@ -95,6 +95,7 @@ body.cine #hud{opacity:0}
 .edge.nest{background:var(--sun)}
 .edge.shiny{background:#fff6cc}
 .edge.berry{background:#ffd0d4;animation:pulse .8s ease-in-out infinite}
+.edge.berryD{background:#e6d4ff;animation:pulse .8s ease-in-out infinite}
 body.starving #bellyFill{animation:blink .6s steps(2) infinite}
 @keyframes blink{50%{opacity:.35}}
 body.starving #vig{opacity:.35!important;background:radial-gradient(ellipse at center,rgba(255,140,0,0) 50%,rgba(220,90,0,.5) 100%)}
@@ -340,7 +341,7 @@ button.pill:focus-visible{outline:3px solid var(--sea);outline-offset:3px}
 .goals li,.mList li{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:center;line-height:1.25}
 .gi{width:38px;height:38px;border-radius:50%;border:2.5px solid var(--ink);background:var(--paper2);display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 0 var(--ink)}
 .gi svg{width:24px;height:24px;overflow:visible}
-.gi.shiny{background:#fff3c4}.gi.berry{background:#ffd6da}.gi.rex{background:#ffcdc2}.gi.sun{background:#ffd9a8}.gi.warn{background:#ffe08a}.gi.heart{background:#ffd3df}.gi.wave{background:#c8eef5}
+.gi.shiny{background:#fff3c4}.gi.berry{background:#ffd6da}.gi.berryD{background:#eadcff}.gi.rex{background:#ffcdc2}.gi.sun{background:#ffd9a8}.gi.warn{background:#ffe08a}.gi.heart{background:#ffd3df}.gi.wave{background:#c8eef5}
 .goals b,.mList b{font-weight:900;font-size:15px;display:block}
 .goals small,.mList small{font-size:13px;font-weight:700;color:var(--mute);display:block}
 .ctrls{display:flex;flex-direction:column;gap:7px}
@@ -487,7 +488,7 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     <div id="dodaRow" aria-label="Doda: attention, belly and egg">
       <span class="dn">DODA</span>
       <span class="dm" title="Attention (shinies)"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5l11 10-11 20L9 15z" fill="#ffd86b" stroke="#24170e" stroke-width="3" stroke-linejoin="round"/></svg><span class="db"><i id="dAttn"></i></span></span>
-      <span class="dm" title="Belly (berries)"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="14" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="26" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="20" cy="31" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/></svg><span class="db"><i id="dBelly"></i></span></span>
+      <span class="dm" title="Belly (purple berries)"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="14" cy="22" r="7" fill="#8b4fd6" stroke="#24170e" stroke-width="2.5"/><circle cx="26" cy="22" r="7" fill="#8b4fd6" stroke="#24170e" stroke-width="2.5"/><circle cx="20" cy="31" r="7" fill="#8b4fd6" stroke="#24170e" stroke-width="2.5"/></svg><span class="db"><i id="dBelly"></i></span></span>
       <span id="dEgg" title="The egg (warm while she sits on it)"></span>
     </div>
     <div>
@@ -683,7 +684,7 @@ const TUN = {
   rexSight: { v: 24,   min: 8,  max: 45,  step: 1,   label: 'T-rex eyesight', note: 'Spotting range in the open.' },
   snackLock:{ v: 2.4,  min: .5, max: 6,   step: .1,  label: 'Snack lock time', note: 'Seconds he spends chewing.' },
   hunger:   { v: .75,  min: 0,  max: 3,   step: .05, label: 'Hunger rate', note: 'Belly % lost per second.' },
-  distract: { v: .24,  min: 0,  max: 1,   step: .01, label: 'Distraction chance', note: 'Per second near shiny things.' },
+  distract: { v: .24,  min: 0,  max: 1,   step: .01, label: 'Distraction chance', note: 'Per second near puddles and butterflies.' },
   trip:     { v: .04,  min: 0,  max: .4,  step: .005,label: 'Trip chance', note: 'Per second. Way up when panicking.' },
   fart:     { v: 1,    min: 0,  max: 3,   step: .05, label: 'Fart frequency', note: 'Each one is a scent trail.' },
   wipeout:  { v: .2,   min: 0,  max: .8,  step: .01, label: 'Jump wipeout chance', note: 'Base odds. Way up at a sprint.' },
@@ -1118,7 +1119,7 @@ const CLOUDS = [];
 })();
 
 /* ---------------- props ---------------- */
-const trees = [], bushes = [], berryBushes = [], crystals = [], rocks = [], butterflies = [];
+const trees = [], bushes = [], berryBushes = [], pools = [], rocks = [], butterflies = [];
 const SWAY = [];
 const LEAF_PAL = [[0x2f6a2c, 0x8fcb5a], [0x2c6236, 0x74b85c], [0x3d7a28, 0xa8c84a], [0x2f6b3e, 0x6dbf7a], [0x245a34, 0x5fae6a]];
 /* v0.12 trees. Foliage = overlapping lumpy blobs whose normals all point out from the canopy centre,
@@ -1208,6 +1209,8 @@ function addTree(x, z, kind, opt) {
   const inGap = a => gaps.some(g => Math.abs(angDiff(a, g)) < .32);
   addTree(NEST.x - 8.5, NEST.z - 6.5, 'giant', { home: true });
   addTree(NEST.x + 9.5, NEST.z + 4.5, 'giant', { home: true });
+  // v0.15: three more giants round the edge, between the entrances: home is a hidden cathedral of tall trees
+  for (const a of [1.68, 4.3, 5.89]) addTree(NEST.x + Math.cos(a) * 9.6, NEST.z + Math.sin(a) * 9.6, 'giant', { home: true });   // just inside the wall, so the T-rex can't get wedged on them
   let placed = 0;
   for (let i = 0; i < 400 && placed < 30; i++) {
     const a = sr(0, TAU), d = sr(5, 11.5), x = NEST.x + Math.cos(a) * d, z = NEST.z + Math.sin(a) * d;
@@ -1258,8 +1261,11 @@ for (let i = 0; i < 52; i++) {
   mesh.position.set(s.x, s.h - .12, s.z); mesh.rotation.y = sr(0, TAU); scene.add(mesh);
   bushes.push({ x: s.x, z: s.z, r: 1.85, mesh, mat, wob: 0, fade: 1 });
 }
-/* berry bushes (food is never where it's safe): small, bright, glossy berries */
+/* berry bushes (food is never where it's safe): small, bright, glossy berries
+   v0.15: two kinds. RED = his (he can't walk past one: snack lock). PURPLE = Doda's: he never eats them off the
+   bush; walk him INTO one and he picks a bunch for her. So you always know which is going to happen. */
 const MAT_BERRY = toon(0xe5303e);
+const BERRY_COL = { his: [0xe5303e, 0xc81f30, 0xffd0d4], hers: [0x8b4fd6, 0x6a34b4, 0xe6d4ff] };
 for (let i = 0; i < 40; i++) {
   const s = spot((x, z, h) => h > .5 && clearOf(obstacles, x, z, 2) && clearOf(bushes, x, z, 2.6) && clearOf(berryBushes, x, z, 4) && !nearNest(x, z, SANCT_R + 3));
   if (!s) continue;
@@ -1271,26 +1277,37 @@ for (let i = 0; i < 40; i++) {
   const bb = new Builder();
   for (let k = 0; k < 4; k++) {
     const a = k / 4 * TAU + sr(-.4, .4), d = sr(.5, .7), y = sr(.7, 1.15), cx = Math.cos(a) * d, cz = Math.sin(a) * d;
-    for (let j = 0; j < 3; j++) { const ox = cx + Math.cos(j * 2.1) * .1, oz = cz + Math.sin(j * 2.1) * .1, oy = y - j * .06; bb.add(GEO.sphLo, j === 1 ? 0xc81f30 : 0xe5303e, [ox, oy, oz], .13); bb.add(GEO.sphLo, 0xffd0d4, [ox - .04, oy + .07, oz + .04], .035); }
+    const BC = BERRY_COL[i % 3 === 2 ? 'hers' : 'his'];
+    for (let j = 0; j < 3; j++) { const ox = cx + Math.cos(j * 2.1) * .1, oz = cz + Math.sin(j * 2.1) * .1, oy = y - j * .06; bb.add(GEO.sphLo, j === 1 ? BC[1] : BC[0], [ox, oy, oz], .13); bb.add(GEO.sphLo, BC[2], [ox - .04, oy + .07, oz + .04], .035); }
     bb.add(GEO.sph, 0x5fae3a, [cx, y + .2, cz], [.13, .02, .2], [0, a, .3]);
   }
   const berries = new THREE.Mesh(bb.bake(), toonVC()); g.add(berries);
   g.rotation.y = sr(0, TAU); scene.add(g);
-  berryBushes.push({ x: s.x, z: s.z, r: .9, g, berries, ripe: true, regrow: 0, ignoreUntil: 0, pop: 0 });
+  berryBushes.push({ x: s.x, z: s.z, r: .9, g, berries, ripe: true, regrow: 0, ignoreUntil: 0, pop: 0, kind: i % 3 === 2 ? 'hers' : 'his' });
 }
-/* crystals — shiny, irresistible, useless (now growing out of a little rock) */
-const MAT_CRYS = new THREE.MeshStandardMaterial({ color: 0x8ff0ff, emissive: 0x2fa8d0, emissiveIntensity: .6, roughness: .12, metalness: .3, flatShading: true });
-const MAT_CRYS2 = new THREE.MeshStandardMaterial({ color: 0xd2a6ff, emissive: 0x7a3fd0, emissiveIntensity: .5, roughness: .12, metalness: .3, flatShading: true });
+/* v0.14: reflection pools (they replaced the crystals: a first-time player thought the crystals were the shinies).
+   Still water he can see himself in. He is the most handsome dodo he has ever seen. Flat, blue, can't be picked up. */
+const MAT_POOL = new THREE.MeshStandardMaterial({ color: 0x8fd3ee, emissive: 0x2a6f95, emissiveIntensity: .35, roughness: .04, metalness: .25 });
+const MAT_POOL_HL = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .55, depthWrite: false });
+const RIPPLE_GEO = new THREE.RingGeometry(.86, 1, 28);
+const flatAt = (x, z, h, r) => { for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; if (Math.abs(groundH(x + Math.cos(a) * r, z + Math.sin(a) * r) - h) > .16) return false; } return true; };
 for (let i = 0; i < 14; i++) {
-  const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 1.4) && clearOf(bushes, x, z, 2.4) && clearOf(crystals, x, z, 12) && !nearNest(x, z, SANCT_R + 2));
+  const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 2.2) && clearOf(bushes, x, z, 2.8) && clearOf(pools, x, z, 12) && !nearNest(x, z, SANCT_R + 2) && flatAt(x, z, h, 1.6));
   if (!s) continue;
-  const g = new THREE.Group(); g.position.set(s.x, s.h, s.z);
-  const rb = new Builder().with({ sky: [.75, 1.1], moss: 0x6f9a3e }); rb.add(ROCKS[i % 4], 0x8f8a84, [0, .12, 0], [.6, .35, .55]);
-  const rm = new THREE.Mesh(rb.bake(), new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .9 })); rm.castShadow = true; g.add(rm);
-  const cm = i % 3 === 2 ? MAT_CRYS2 : MAT_CRYS;
-  for (let k = 0; k < 5; k++) { const big = k === 0; part(g, GEO.oct, cm, [big ? 0 : sr(-.32, .32), big ? .7 : .45, big ? 0 : sr(-.32, .32)], big ? [.22, .8, .22] : [sr(.12, .2), sr(.35, .6), sr(.12, .2)], [big ? 0 : sr(-.6, .6), sr(0, 3), big ? 0 : sr(-.6, .6)]); }
-  scene.add(g);
-  crystals.push({ x: s.x, z: s.z, r: .5, g, glintT: sr(0, 2) });
+  const r = sr(1.05, 1.4), g = new THREE.Group();
+  let hm = s.h; for (let k = 0; k < 10; k++) { const a = k / 10 * TAU; hm = Math.max(hm, groundH(s.x + Math.cos(a) * r, s.z + Math.sin(a) * r)); }
+  g.position.set(s.x, Math.max(s.h, hm - .04), s.z);   // sit the water just above the highest ground under it
+  const w = new THREE.Mesh(GEO.sph, MAT_POOL); w.scale.set(r, .06, r * .82); w.position.y = .02; w.receiveShadow = true; g.add(w);
+  const hl = new THREE.Mesh(GEO.sphLo, MAT_POOL_HL); hl.scale.set(r * .45, .02, r * .1); hl.position.set(-r * .2, .075, r * .18); hl.rotation.y = .5; g.add(hl);
+  const b = new Builder();
+  b.add(GEO.sphLo, 0x6b5a3e, [0, -.02, 0], [r + .28, .07, r * .82 + .28]);
+  for (let k = 0; k < 11; k++) { const a = k / 11 * TAU + sr(-.2, .2); b.add(GEO.sphLo, k % 3 ? 0x8f8a84 : 0xa9a39a, [Math.cos(a) * (r + .18), .04, Math.sin(a) * (r * .82 + .18)], [sr(.1, .18), sr(.06, .1), sr(.1, .16)]); }
+  const ra = sr(0, TAU); for (let k = 0; k < 5; k++) { const a = ra + sr(-.5, .5), d = r + sr(.1, .35); b.add(GEO.cyl, 0x5f9a3a, [Math.cos(a) * d, .35, Math.sin(a) * d * .82], [.025, sr(.5, .9), .025], [sr(-.2, .2), 0, sr(-.2, .2)]); }
+  const rim = new THREE.Mesh(b.bake(), toonVC()); rim.receiveShadow = true; g.add(rim);
+  const rip = new THREE.Mesh(RIPPLE_GEO, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+  rip.rotation.x = -Math.PI / 2; rip.position.y = .09; g.add(rip);
+  g.rotation.y = sr(0, TAU); scene.add(g);
+  pools.push({ x: s.x, z: s.z, r, g, rip, ripT: sr(0, 2), ripA: 0 });
 }
 /* nest + egg: woven twigs, soft feather lining */
 const nestG = new THREE.Group(), NEST_EGG = { mesh: null };
@@ -1445,9 +1462,9 @@ for (const md of meadows) for (let i = 0; i < 2; i++) {
 /* helpers to query props */
 function bushAt(x, z) { for (const b of bushes) if (Math.hypot(b.x - x, b.z - z) < b.r * .82) return b; return null; }
 function meadowAt(x, z) { for (const m of meadows) if (Math.hypot(m.x - x, m.z - z) < m.r) return m; return null; }
-function nearestRipe(x, z, r, now) {
+function nearestRipe(x, z, r, now, kind) {
   let best = null, bd = r;
-  for (const b of berryBushes) { if (!b.ripe || b.ignoreUntil > now) continue; const d = Math.hypot(b.x - x, b.z - z); if (d < bd) { bd = d; best = b; } }
+  for (const b of berryBushes) { if (!b.ripe || b.ignoreUntil > now || (kind && b.kind !== kind)) continue; const d = Math.hypot(b.x - x, b.z - z); if (d < bd) { bd = d; best = b; } }
   return best;
 }
 function nearestOf(list, x, z, r) { let best = null, bd = r; for (const o of list) { const d = Math.hypot(o.x - x, o.z - z); if (d < bd) { bd = d; best = o; } } return best; }
@@ -1649,9 +1666,11 @@ function makeLane() {
 }
 
 /* ---------------- orbiting stars (dazed) ---------------- */
+const STAR_GEO = (() => { const sh = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * TAU + Math.PI / 2, rr = k % 2 ? .45 : 1; sh[k ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr); } sh.closePath(); return new THREE.ShapeGeometry(sh); })();
 function makeStars(scale) {
-  const g = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color: 0xffe14a });
-  for (let i = 0; i < 4; i++) { const s = new THREE.Mesh(GEO.oct, mat); s.scale.setScalar(.12 * scale); g.add(s); }
+  // v0.15: flat cartoon stars (were yellow octahedrons, which looked exactly like gold diamonds / shinies)
+  const g = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color: 0xfff6c8, side: THREE.DoubleSide });
+  for (let i = 0; i < 4; i++) { const s = new THREE.Mesh(STAR_GEO, mat); s.scale.setScalar(.15 * scale); g.add(s); }
   g.visible = false; scene.add(g); return g;
 }
 function spinStars(g, x, y, z, t, r) {
@@ -1764,13 +1783,16 @@ function buildDodo(pal) {
   P.eyes = []; P.brows = [];
   [1, -1].forEach(sd => {
     const r = sd > 0 ? .155 : .135;
-    const e = new THREE.Group(); e.position.set(.3 * sd, .15, .2); e.rotation.y = .8 * sd; P.head.add(e);
+    // v0.15: pushed out along the eye's own axis so the eye sits ON the white cheek, not inside it
+    // (both were sunk in the cheek; the smaller right eye, pupil and all, was completely buried)
+    const k = .19 - r * .4, ex = Math.sin(.8) * k * sd, ez = Math.cos(.8) * k;
+    const e = new THREE.Group(); e.position.set(.3 * sd + ex, .15, .2 + ez); e.rotation.y = .8 * sd; P.head.add(e);
     part(e, GEO.sph, eyeW, [0, 0, 0], r, null, .02);
     const pu = new THREE.Group(); pu.position.set(0, 0, r * .75); e.add(pu);
     const pm = new THREE.Mesh(GEO.sph, black); pm.scale.set(r * .56, r * .56, r * .28); pu.add(pm);
     const hl = new THREE.Mesh(GEO.sphLo, new THREE.MeshBasicMaterial({ color: 0xffffff })); hl.scale.setScalar(r * .17); hl.position.set(.025 * sd, .03, r * .2); pu.add(hl);
     P.eyes.push({ g: e, pu, px: 0, py: 0, vx: 0, vy: 0, sd, r });
-    const b = new THREE.Group(); b.position.set(.29 * sd, .17 + r + .02, .21); b.rotation.y = .8 * sd; P.head.add(b);
+    const b = new THREE.Group(); b.position.set(.29 * sd + ex * .8, .17 + r - .01, .21 + ez * .8); b.rotation.y = .8 * sd; P.head.add(b);
     part(b, GEO.sph, brow, [0, 0, 0], [.12, .032, .045], null, .012);
     if (pal.wife) for (let k = 0; k < 3; k++) part(b, GEO.cone, brow, [(k - 1) * .045 + .02 * sd, -.05, .03], [.012, .07, .012], [-.5, 0, (k - 1) * .4 + .25 * sd]);
     P.brows.push({ g: b, sd });
@@ -2079,7 +2101,9 @@ function animRex(r, dt, t) {
     else { neck = -.55 + (T < 3.3 ? Math.sin(T * 12) * .07 : 0); jaw = (T > 3.45 && T < 3.8) ? .9 : 0; bodyP = -.08; }
   }
   if (st === 'idle') { neck = .1; }
-  if (r.headTrack && (st === 'chase' || st === 'windup' || st === 'alert' || st === 'roam' || st === 'investigate')) {
+  // v0.14: brawling with a sabertooth: snapping, stomping, thrashing, spinning round after the cat
+  if (st === 'fight') { neck = -.15 + Math.sin(t * 6.3) * .4; jaw = .55 + Math.sin(t * 15) * .5; shake = 1; flail = 3; bodyP = Math.sin(t * 4.7) * .12; hipsY = -Math.abs(Math.sin(t * 7)) * .18; }
+  if (r.headTrack && (st === 'chase' || st === 'windup' || st === 'alert' || st === 'roam' || st === 'investigate' || st === 'fight')) {
     const a = Math.atan2(r.headTrack.x - r.x, r.headTrack.z - r.z); headYaw = clamp(angDiff(r.heading, a), -.6, .6);
   }
   const k = Math.min(1, dt * 9);
@@ -2097,6 +2121,7 @@ function animRex(r, dt, t) {
   P.jaw.rotation.x = A.jaw * .75;
   for (const l of P.legs) {
     const lp = ph + (l.sd > 0 ? 0 : Math.PI);
+    if (st === 'fight') { const q = t * 7 + (l.sd > 0 ? 0 : Math.PI); l.hip.rotation.x = Math.sin(q) * .35; l.knee.rotation.x = Math.max(0, Math.cos(q)) * .6; l.ank.rotation.x = -l.knee.rotation.x * .5; continue; }
     if (st === 'faceplant') { l.hip.rotation.x = -.6 + Math.sin(t * 16 + l.sd) * .5; l.knee.rotation.x = .9; l.ank.rotation.x = -.3; continue; }
     l.hip.rotation.x = Math.sin(lp) * .6 * amp;
     l.knee.rotation.x = Math.max(0, Math.cos(lp)) * .85 * amp;
@@ -2944,7 +2969,7 @@ function spawnRex(i) {
   const s = spot((x, z, h) => h > .8 && Math.hypot(x - NEST.x, z - NEST.z) > 42 && clearOf(obstacles, x, z, 3), 600) || { x: 40, z: -30, h: 1 };
   Object.assign(r, { x: s.x, z: s.z, y: s.h, heading: rand(0, TAU), speed: 0, state: 'roam', stT: 0, stAge: 0, wx: s.x, wz: s.z, tx: 0, tz: 0, cx: 0, cz: 0,
     lastSeenX: 0, lastSeenZ: 0, lastSeenT: -99, lungeDir: 0, lungeCD: 0, lungeMin: 99, blockT: 0, block: null, avoidT: 0, avoidS: 1, phase: 0,
-    roared: false, lastRoar: -99, scentT: null, sniff: false, headTrack: null, turnRate: 0, graceT: i === 0 ? 14 : 4, active: true, eatT: 0, sniffPuffT: 0, wpT: 0 });
+    roared: false, lastRoar: -99, scentT: null, sniff: false, headTrack: null, turnRate: 0, graceT: i === 0 ? 14 : 4, active: true, eatT: 0, sniffPuffT: 0, wpT: 0, fightCD: 0, postFight: false, foe: null, brawl: null });
   r.rig.root.visible = true;
   return r;
 }
@@ -2954,6 +2979,25 @@ function rexP(r) {
 }
 const scents = [];
 function setR(r, s, dur) { if (r.state !== s) r.stAge = 0; r.state = s; r.stT = dur; }
+/* v0.15: the T-rex used to park at the grove wall forever (chasing a smell or a noise from inside it, or
+   circling home because its wandering was biased toward him). Three fixes: no target point it chases is ever
+   inside the grove; it gets bored of standing by the grove after a few seconds; it wanders away from home. */
+const GROVE_KEEP = SANCT_R + 4;
+function pushOutOfGrove(o, kx, kz) {
+  const dx = o[kx] - NEST.x, dz = o[kz] - NEST.z, d = Math.hypot(dx, dz);
+  if (d < GROVE_KEEP) { const l = d || 1; o[kx] = NEST.x + (d ? dx / l : 1) * GROVE_KEEP; o[kz] = NEST.z + (d ? dz / l : 0) * GROVE_KEEP; }
+}
+function crossesGrove(ax, az, bx, bz) {   // would walking straight from a to b clip the grove?
+  const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz || 1, t = clamp(((NEST.x - ax) * vx + (NEST.z - az) * vz) / l2, 0, 1);
+  return hyp(ax + vx * t, az + vz * t, NEST.x, NEST.z) < SANCT_R + 5;
+}
+function leaveGrove(r) {
+  r.nestT = 0; r.atWall = 0; r.scentT = null; r.sniff = false; r.chaseT = 0;
+  setR(r, 'roam', 0); r.restT = 15;
+  const away = Math.atan2(r.z - NEST.z, r.x - NEST.x);   // walk straight out the way it is facing from home, never round or across it
+  for (let i = 0; i < 60; i++) { const a = away + rand(-.9, .9) * (1 + i / 30), d = rand(32, 66), x = NEST.x + Math.cos(a) * d, z = NEST.z + Math.sin(a) * d; if (groundH(x, z) > .6 && Math.hypot(x, z) < 80 && !crossesGrove(r.x, r.z, x, z)) { r.wx = x; r.wz = z; r.wpT = rand(14, 20); break; } }
+  const hp = rexHeadWorld(r); popup('huff.', hp.x, hp.y + 1.4, hp.z, 'small', 1.4);
+}
 
 /* ---------------- noise & smell ---------------- */
 function makeNoise(x, z, radius, color, kind) {
@@ -2962,13 +3006,14 @@ function makeNoise(x, z, radius, color, kind) {
   for (const r of rexes) {
     if (!r.active) continue;
     const d = hyp(r.x, r.z, x, z);
+    if (nearNest(x, z, SANCT_R + 1)) continue;   // v0.15: home is soundproof. Noises in the grove never pull it to the wall
     if (d < radius && (r.state === 'roam' || r.state === 'search' || r.state === 'investigate' || r.state === 'scan' || r.state === 'sniffBush')) {
       r.tx = x + rand(-1.5, 1.5); r.tz = z + rand(-1.5, 1.5); r.sniff = false; setR(r, 'investigate', 20); r.scentT = null;
       const hp = rexHeadWorld(r); popup('?!', hp.x, hp.y + 1.6, hp.z, 'big red', 1.2);
     }
   }
 }
-function addScent(x, z) { scents.push({ x, z, age: 0, life: 22, born: G.time }); if (scents.length > 24) scents.shift(); }
+function addScent(x, z) { if (nearNest(x, z, SANCT_R + 1)) return; scents.push({ x, z, age: 0, life: 22, born: G.time }); if (scents.length > 24) scents.shift(); }
 
 /* ---------------- kill ---------------- */
 function kill(kind, r) {
@@ -3004,7 +3049,8 @@ function causeLine(kind) {
   if (s === 'tumble' || s === 'stagger') return pick(['Attempted a heroic leap. Landed on his face. Then in a mouth.', 'Stuck the landing with his face. The T-rex stuck the landing on him.', 'Wiped out mid-chase. Got up just in time to be eaten.', 'Jumped at full sprint. Bold. Wrong, but bold.']);
   if (s === 'snack') return pick(['Stopped for a berry. During a T-rex chase.', 'Chose lunch. Became lunch.', 'Could not walk past the snack. Not even that one.', 'Ate ' + (sn + 1) + ' berries today. The T-rex ate one dodo.']);
   if (s === 'butterfly') return pick(['Followed a butterfly directly into a mouth.', 'The butterfly survived. Good for the butterfly.', 'Chased something pretty. Something big chased him.']);
-  if (s === 'stare') return pick(['Stared at a shiny rock until the rock was the last thing he saw.', 'Mesmerised by a crystal. Digested by a T-rex.', 'Something sparkled. He had to know. Now he knows.']);
+  if (s === 'stare' && D.stareKind === 'fight') return pick(['Stopped to watch a T-rex fight a sabertooth. Front row seat. Also the menu.', 'Watched the fight. Got eaten by the winner.', 'He had ringside seats. So, it turned out, did the T-rex.']);
+  if (s === 'stare') return pick(['Admired his reflection. The T-rex admired it too.', 'Stared into a puddle. Something stared back. It had teeth.', 'Most handsome dodo on the island. Briefly.', 'Fell in love with his own reflection. It did not end well for either of them.']);
   if (D.chaseDistAt && t - D.chaseDistAt < 2.5) return pick(['Stopped to look at something. During a chase. For one second. It was enough.', 'Remembered the T-rex about half a second too late.', 'Got distracted mid-chase. The T-rex did not.']);
   if (s === 'bonk') return pick(['Ran face-first into a tree. The T-rex did not.', 'Found the only tree on the island. With his face.', 'BONK. Then CHOMP.', 'Hit a tree at full sprint. Saw stars. Then teeth.']);
   if (s === 'trip') return pick(['Tripped over absolutely nothing at full sprint.', 'Faceplanted. The T-rex said thank you.', 'Fell over. Did not get up in time. Did not get up at all.']);
@@ -3111,7 +3157,7 @@ function updateDodo(dt) {
     else if (hunted || D.panicT > 0) { setS('panic', 999, "He's flailing. Steer him and he sprints!"); RUN.lost++; think('alarm', 999); D.tripCD = Math.max(D.tripCD, 2.5); }
     else {
       const rad = (3.6 + D.hunger / 100 * 2.6) * (hangry ? 1.4 : 1);
-      let b = nearestRipe(D.pos.x, D.pos.z, rad, G.time);
+      let b = nearestRipe(D.pos.x, D.pos.z, rad, G.time, 'his');
       if (b && Q.carrying) {
         if (D.hunger > 80) { dropShiny('too hungry! dropped it'); }
         else { if ((D.beakNagT = (D.beakNagT || 0) - dt) <= 0) { D.beakNagT = 4; popup('mmf! (beak full)', D.pos.x, D.y + 2.2, D.pos.z, 'small', 1.3); say('mmph'); hint('beakFull'); } b = null; }
@@ -3121,12 +3167,18 @@ function updateDodo(dt) {
         D.oohT -= dt;
         if (D.oohT <= 0) {
           if (hyp(D.pos.x, D.pos.z, D.oohTarget.x, D.oohTarget.z) < rad * 1.25 && D.oohTarget.ripe) {
-            // not hungry himself and Doda could eat? he picks one for her instead of scoffing it
-            if (!Q.carrying && D.hunger < 50 && W.state !== 'dead' && W.belly < 60) pluckBerry(D.oohTarget); else startSnack(D.oohTarget);
+            startSnack(D.oohTarget);   // v0.15: red bushes are always HIS. Doda's are the purple ones (see below)
           }
           D.oohTarget = null;
         }
       } else D.oohTarget = null;
+      // v0.15: walk him INTO a purple bush and he picks a bunch for Doda. Never eats them off the bush.
+      if (D.state === 'wander' && !D.oohTarget && W.state !== 'dead') {
+        const hb = nearestRipe(D.pos.x, D.pos.z, 1.75, G.time, 'hers');
+        if (hb && !Q.carrying) pluckBerry(hb);
+        else if (hb && (D.beakNagT = (D.beakNagT || 0) - dt) <= 0) { D.beakNagT = 4; popup('mmf! (beak full)', D.pos.x, D.y + 2.2, D.pos.z, 'small', 1.3); say('mmph'); }
+        if (nearestRipe(D.pos.x, D.pos.z, 9, G.time, 'hers')) hint('dodaBush');
+      }
       // carrying Doda's berry: the longer the trip and the hungrier he is, the more he stares at it
       if (D.state === 'wander' && carryingBerry() && D.temptCD <= 0) {
         const p = .012 + Math.pow(Math.max(0, D.hunger - 25) / 75, 2) * .16;
@@ -3134,9 +3186,10 @@ function updateDodo(dt) {
       }
       if (D.state === 'wander' && !D.oohTarget) {
         const bf = nearestOf(butterflies, D.pos.x, D.pos.z, 7);
-        const cr = nearestOf(crystals, D.pos.x, D.pos.z, 8);
-        if (bf && Math.random() < tv('distract') * dt) { setS('butterfly', rand(3.2, 4.8), "He's following a butterfly. Wherever it goes."); D.target = bf; D.lookAt = bf; bf.fleeing = D.stT; RUN.lost++; think('butterfly', 999); hint('butterfly'); say('oohDream', { prio: 2 }); }
-        else if (cr && Math.random() < tv('distract') * dt * 1.1 * (Q.carrying ? .25 : 1)) { if (Q.carrying && Math.random() < .4) dropShiny('dropped it to stare at a DIFFERENT shiny'); setS('stare', rand(2.2, 3.4), 'Something shiny. He is not listening.'); say('oohDream', { prio: 2, rate: 1.1 }); D.target = cr; D.lookAt = cr; RUN.lost++; think('sparkle', 999); }
+        const cr = nearestOf(pools, D.pos.x, D.pos.z, 8), fb = nearestBrawl(D.pos.x, D.pos.z, 17);
+        if (fb && G.time - (D.watchedAt || -99) > 5 && Math.random() < (pm ? .35 : .9) * dt) startWatch(fb);
+        else if (bf && Math.random() < tv('distract') * dt) { setS('butterfly', rand(3.2, 4.8), "He's following a butterfly. Wherever it goes."); D.target = bf; D.lookAt = bf; bf.fleeing = D.stT; RUN.lost++; think('butterfly', 999); hint('butterfly'); say('oohDream', { prio: 2 }); }
+        else if (cr && Math.random() < tv('distract') * dt * 1.1 * (Q.carrying ? .25 : 1)) { if (Q.carrying && Math.random() < .4) dropShiny('dropped it to admire himself in a puddle'); setS('stare', Math.min(6, rand(2.6, 3.6) + hyp(cr.x, cr.z, D.pos.x, D.pos.z) / 2.6), 'He found his reflection. He is not listening.'); D.stareKind = 'pool'; say('oohDream', { prio: 2, rate: 1.1 }); D.target = cr; D.lookAt = cr; RUN.lost++; think('sparkle', 999); popup(pick(['hello, handsome', 'ooh… who is THAT?', '*gasp* gorgeous']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1.3); }
         else if (D.tripCD <= 0 && D.vel.length() > 2.2 && Math.random() < tv('trip') * dt * (nearestOf(rocks, D.pos.x, D.pos.z, 4) ? 2 : 1) * (Q.carrying ? .3 : 1)) doTrip();
       }
     }
@@ -3146,10 +3199,10 @@ function updateDodo(dt) {
     else {
       if (hunted) D.calmT = 0; else D.calmT += dt;
       if (D.calmT > 2.2 && D.panicT <= 0) { setS('wander', 0, ''); think('question', 1.6); D.calmT = 0; say(Math.random() < .5 ? 'phew' : 'huh', { prio: 2 }); }
-      const b = Q.carrying ? null : nearestRipe(D.pos.x, D.pos.z, 2.3, G.time);
+      const b = Q.carrying ? null : nearestRipe(D.pos.x, D.pos.z, 2.3, G.time, 'his');
       // he still gets distracted mid-chase, just not for long: then he remembers (see realize())
       const bf = hunted && D.chaseDistCD <= 0 ? nearestOf(butterflies, D.pos.x, D.pos.z, 5.5) : null;
-      const cr = hunted && D.chaseDistCD <= 0 ? nearestOf(crystals, D.pos.x, D.pos.z, 6) : null;
+      const cr = hunted && D.chaseDistCD <= 0 ? nearestOf(pools, D.pos.x, D.pos.z, 6) : null;
       if (b) { startSnack(b, hunted); popup(hunted ? 'ooh! (mid-chase?!)' : 'ooh!', D.pos.x, D.y + 2, D.pos.z, 'nom', 1); }
       else if (bf && Math.random() < tv('distract') * .9 * dt) chaseDistract('butterfly', bf);
       else if (cr && Math.random() < tv('distract') * .9 * dt * (Q.carrying ? .4 : 1)) chaseDistract('stare', cr);
@@ -3157,7 +3210,7 @@ function updateDodo(dt) {
     }
   }
   if (st === 'hush' || st === 'hide') {
-    const food = nearestRipe(D.pos.x, D.pos.z, 6, G.time);
+    const food = nearestRipe(D.pos.x, D.pos.z, 6, G.time, 'his');
     if (!space) { setS(hunted ? 'panic' : 'wander', 0, ''); D.strMode = ''; }
     else {
       if (st === 'hush' && D.inBush) { setS('hide', 999, 'Hidden. Keep holding. He wants out.'); D.lastHide = G.time; }
@@ -3222,7 +3275,7 @@ function updateDodo(dt) {
         }
       } else if (D.idleT <= 2.2) D.curio = null;
       if (hangry) {
-        const b = nearestRipe(D.pos.x, D.pos.z, 22, G.time);
+        const b = nearestRipe(D.pos.x, D.pos.z, 22, G.time, 'his');
         if (b) {
           const fx = b.x - D.pos.x, fz = b.z - D.pos.z, fl = Math.hypot(fx, fz) || 1;
           if (!pm) { iDir = _t.set(fx / fl, 0, fz / fl); iSpd = 3.4; ctrl = .62; }
@@ -3268,7 +3321,11 @@ function updateDodo(dt) {
     }
     case 'stare': {
       ctrl = D.chaseDist ? .25 : .05; iDir = null; grip = 6;
-      if (D.target && Math.random() < dt * 2) FX.glint(D.target.x + rand(-.3, .3), groundH(D.target.x, D.target.z) + rand(.6, 1.1), D.target.z + rand(-.3, .3));
+      const tg = D.target;
+      // a puddle: he waddles to the edge, then gazes at himself, adoringly
+      if (tg && D.stareKind === 'pool') { if (!D.chaseDist && hyp(tg.x, tg.z, D.pos.x, D.pos.z) > tg.r + .7) { iDir = _t.set(tg.x - D.pos.x, 0, tg.z - D.pos.z).normalize(); iSpd = 2.6; } else if (Math.random() < dt * 1.3) FX.hearts(D.pos.x, D.y + 1.9, D.pos.z); }
+      // a fight: he stands there with his beak open until it's over (or you honk)
+      if (tg && D.stareKind === 'fight' && !tg.live) D.stT = Math.min(D.stT, .15);
       if (D.stT <= 0) { if (D.chaseDist) realize(); else { setS('wander', 0, ''); think(null); } }
       break;
     }
@@ -3449,10 +3506,10 @@ function startSnack(b, midChase) {
 function chaseDistract(kind, target) {
   const dur = tv('chaseFocus') * (kind === 'stare' ? rand(.65, .95) : rand(.8, 1.15));
   if (kind === 'butterfly') { setS('butterfly', dur, 'A butterfly. Mid-chase. Really.'); target.fleeing = dur; think('butterfly', 999); }
-  else { if (Q.carrying && Math.random() < .3) dropShiny('dropped it to stare at a crystal. MID-CHASE.'); setS('stare', dur, 'Something shiny. Mid-chase. Really.'); think('sparkle', 999); }
+  else { if (Q.carrying && Math.random() < .3) dropShiny('dropped it to admire himself. MID-CHASE.'); setS('stare', dur, 'His reflection. Mid-chase. Really.'); D.stareKind = 'pool'; think('sparkle', 999); }
   D.target = target; D.lookAt = target; D.chaseDist = true; D.chaseDistAt = G.time; D.chaseDistCD = rand(6, 9);
   RUN.lost++; RUN.chaseDist++;
-  popup(kind === 'butterfly' ? pick(['ooh… butterfly', 'pretty…']) : pick(['ooh… shiny', 'sparkly…']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1);
+  popup(kind === 'butterfly' ? pick(['ooh… butterfly', 'pretty…']) : pick(['ooh… handsome', 'hello, me']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1);
   say('oohDream', { prio: 3, rate: 1.15 }); hint('chaseDist');
 }
 function realize() {
@@ -3648,7 +3705,7 @@ function stumble() {
 function pickCurio() {
   const c = [], x = D.pos.x, z = D.pos.z, R = 18, add = (o, kind, w, stop) => { const d = hyp(o.x, o.z, x, z); if (d < R && d > 2) c.push({ x: o.x, z: o.z, kind, ref: o, w: w * (1.3 - d / R), stop }); };
   for (const b of berryBushes) if (b.ripe) add(b, 'berry', 2, 1.4);
-  for (const o of crystals) add(o, 'crystal', 2, 1.3);
+  for (const o of pools) add(o, 'pool', 2, o.r + .8);
   for (const t of tigers) if (t.state === 'sleep') { const n0 = c.length; add({ x: t.x, z: t.z }, 'tiger', 3, 2.3); if (c.length > n0) c[c.length - 1].ref = t; }
   for (const r of rocks) add(r, 'rock', 1, r.r + 1);
   for (const b of bushes) add(b, 'bush', 1, 1.2);
@@ -3787,24 +3844,31 @@ function rexFootstep(r, side) {
   for (const b of bushes) if (Math.abs(b.x - r.x) < 4 && Math.abs(b.z - r.z) < 4) b.wob = 1;
 }
 function newWaypoint(r) {
-  const resting = (r.restT || 0) > 0 && !G.night;
+  const resting = (r.restT || 0) > 0 && !G.night || nearNest(D.pos.x, D.pos.z, SANCT_R + 6);   // he's home: don't hang around outside
   const near = G.night ? .9 : Math.min(.65, .3 + (G.day - 1) * .15);
   for (let i = 0; i < 40; i++) {
     let x, z;
     if (!resting && Math.random() < near && G.mode === 'play') { const a = rand(0, TAU), d = rand(G.night ? 4 : 14, G.night ? 16 : 34); x = D.pos.x + Math.cos(a) * d; z = D.pos.z + Math.sin(a) * d; }
     else { const a = rand(0, TAU), d = Math.sqrt(Math.random()) * 78; x = Math.cos(a) * d; z = Math.sin(a) * d; if (resting && hyp(x, z, D.pos.x, D.pos.z) < 34) continue; }
-    if (groundH(x, z) > .6 && hyp(x, z, NEST.x, NEST.z) > SANCT_R + 5) { r.wx = x; r.wz = z; r.wpT = rand(10, 18); return; }
+    if (groundH(x, z) > .6 && hyp(x, z, NEST.x, NEST.z) > SANCT_R + 12 && (i > 30 || !crossesGrove(r.x, r.z, x, z))) { r.wx = x; r.wz = z; r.wpT = rand(10, 18); return; }
   }
 }
 function updateRex(r, dt) {
   if (!r.active) return;
   const P = rexP(r);
-  r.stT -= dt; r.stAge += dt; r.lungeCD -= dt; r.graceT -= dt; r.sniffPuffT -= dt; r.restT = (r.restT || 0) - dt;
+  r.stT -= dt; r.stAge += dt; r.lungeCD -= dt; r.graceT -= dt; r.sniffPuffT -= dt; r.restT = (r.restT || 0) - dt; r.fightCD = (r.fightCD || 0) - dt;
   const dx = D.pos.x - r.x, dz = D.pos.z - r.z, d = Math.hypot(dx, dz);
   const playing = G.mode === 'play';
   const sees = playing && r.graceT <= 0 && rexSees(r, d, dx, dz, P);
   r.headTrack = (sees || isHunting(r)) ? D.pos : null;
   r.rig.lane.visible = false;
+  // v0.14: busy brawling with a sabertooth (5h_brawl.js drives it). It is not looking at him.
+  if (r.state === 'fight') { r.speed = 0; r.headTrack = r.foe ? { x: r.foe.x, z: r.foe.z } : null; if (!r.brawl && r.stT < -1) { setR(r, 'roam', 0); newWaypoint(r); } return; }
+  // v0.15: never chase a point inside the grove, and never loiter outside it
+  pushOutOfGrove(r, 'tx', 'tz'); pushOutOfGrove(r, 'cx', 'cz'); pushOutOfGrove(r, 'lastSeenX', 'lastSeenZ'); if (r.state !== 'roam' || !r.wpT) pushOutOfGrove(r, 'wx', 'wz');
+  { const busy = /W$/.test(r.state) || ['eat', 'windup', 'lunge', 'recover', 'faceplant', 'alert'].indexOf(r.state) >= 0;
+    if (!busy && !sees && playing && nearNest(r.x, r.z, SANCT_R + 7)) r.nestT = (r.nestT || 0) + dt; else r.nestT = Math.max(0, (r.nestT || 0) - dt);
+    if (!busy && (r.nestT > 4 || (r.atWall || 0) > 1.2)) { leaveGrove(r); return; } }
   if (rexWifeBrain(r, dt, P, sees)) { if (/W$/.test(r.state)) r.headTrack = { x: W.x, z: W.z }; return; }
   const smellCheck = () => {
     if (!playing || r.graceT > 0) return;
@@ -3832,7 +3896,7 @@ function updateRex(r, dt) {
       smellCheck(); if (r.state !== 'scan') break;
       if (r.stT <= 0) {
         // sometimes go and stick its head in the nearest bush
-        const b = nearestOf(bushes, r.x, r.z, 18);
+        const b = nearestOf(bushes.filter(b => !nearNest(b.x, b.z, SANCT_R + 10)), r.x, r.z, 18);   // v0.15: not the bushes by his front door
         if (b && Math.random() < (D.state === 'hide' ? .75 : .4)) { r.bush = b; setR(r, 'sniffBush', 9); }
         else { setR(r, 'roam', 0); newWaypoint(r); }
       }
@@ -3861,7 +3925,7 @@ function updateRex(r, dt) {
       break;
     }
     case 'search': {
-      if (hyp(r.x, r.z, r.wx, r.wz) < 1.5) { const b = nearestOf(bushes, r.cx, r.cz, 9); if (b && Math.random() < .6) { r.bush = b; setR(r, 'sniffBush', 7); break; } const a = rand(0, TAU), rr = rand(2, 7); r.wx = r.cx + Math.cos(a) * rr; r.wz = r.cz + Math.sin(a) * rr; }
+      if (hyp(r.x, r.z, r.wx, r.wz) < 1.5) { const b = nearestOf(bushes.filter(b => !nearNest(b.x, b.z, SANCT_R + 10)), r.cx, r.cz, 9); if (b && Math.random() < .6) { r.bush = b; setR(r, 'sniffBush', 7); break; } const a = rand(0, TAU), rr = rand(2, 7); r.wx = r.cx + Math.cos(a) * rr; r.wz = r.cz + Math.sin(a) * rr; }
       rexMove(r, r.wx, r.wz, 1.7, 1.8, dt);
       if (r.sniffPuffT <= 0) { r.sniffPuffT = .45; const n = rexMouth(r); FX.nostril(n.x, n.y + .3, n.z, Math.sin(r.heading), Math.cos(r.heading)); }
       if (sees) { setR(r, 'alert', G.time - r.lastRoar < 8 ? .5 : 1.25); r.roared = G.time - r.lastRoar < 8; break; }
@@ -3917,9 +3981,11 @@ function updateRex(r, dt) {
     }
     case 'recover': case 'faceplant': {
       r.speed *= Math.exp(-(r.state === 'faceplant' ? 5 : 2.4) * dt); advanceRex(r, dt);
-      if (r.state === 'recover') r.heading += clamp(angDiff(r.heading, Math.atan2(dx, dz)), -1 * dt, 1 * dt);
+      if (r.state === 'recover' && !r.postFight) r.heading += clamp(angDiff(r.heading, Math.atan2(dx, dz)), -1 * dt, 1 * dt);
       if (r.stT <= 0) {
         r.lungeCD = Math.max(1.2, 2.4 - (G.day - 1) * .4);
+        // after a cat fight it has lost track of him. Unless he's standing right there in plain sight.
+        if (r.postFight) { r.postFight = false; if (sees) { setR(r, 'alert', .6); r.roared = false; } else { setR(r, 'roam', 0); r.restT = 20; r.chaseT = 0; newWaypoint(r); const hp = rexHeadWorld(r); popup('huff.', hp.x, hp.y + 1.4, hp.z, 'small', 1.4); S.huff(clamp(1 - d / 50, .2, .9), clamp((r.x - camera.position.x) / 30, -1, 1)); if (d < 60 && G.mode === 'play') showBanner('IT LOST HIM!', true); } break; }
         if (sees || G.time - r.lastSeenT < 1.5) setR(r, 'chase', 0); else { setR(r, 'search', 6); r.cx = D.pos.x + rand(-4, 4); r.cz = D.pos.z + rand(-4, 4); r.wx = r.cx; r.wz = r.cz; }
       }
       break;
@@ -4012,6 +4078,7 @@ const HINTS = {
   shiny: 'Got one! Take it to Doda at the nest. (He can\'t eat with a full beak.)',
   needShiny: "He won't sleep without Doda. Go and get her: carry a shiny past her and she follows.",
   berryCarry: "He picked a berry for Doda. Get it to her before he gets peckish and eats it himself.",
+  dodaBush: 'PURPLE berries are Doda\'s. Walk him into the bush to pick her some. (RED ones are his, and he WILL stop to eat them.)',
   tempted: "He's thinking about eating Doda's berry. HOLD HUSH to talk him out of it!",
   wifeLeft: "Doda got bored and left the egg! It's cooling. Carry a shiny past her and she'll follow it home.",
   wifeHunted: "The T-rex has seen Doda! HONK near it and it comes after him instead. Or lure her into the trees.",
@@ -4023,6 +4090,8 @@ const HINTS = {
   wipeout: "WIPEOUT! Jumping fast, wobbly, tired or with a full beak can end badly. He'll get up… eventually.",
   nope: "He will NOT run toward the thing that wants to eat him. Steer him sideways instead.",
   bonk: 'BONK! Head-on into a tree at full sprint. Steer around things, or he will find them with his face.',
+  brawl: "CAT FIGHT! The T-rex woke a sabertooth and they hate each other. Get him out of sight before it's over!",
+  watch: 'He stopped to WATCH the fight. Of course he did. Steer him away, or HONK to snap him out of it.',
   chaseDist: 'Even mid-chase he gets distracted, but only for a second. Then he remembers. HONK snaps him out of it.'
 };
 const hintSeen = {}; let toastT = 0;
@@ -4085,7 +4154,8 @@ function togglePause(p) {
 /* ---------------- camera ---------------- */
 const camLook = new V3(0, 0, 0), _cp = new V3(), _cl = new V3();
 // v0.10 was back 15.5 / up 11.8 (a 37 degree look-down from 19.5m). v0.11 sits lower and closer.
-const CAM = { back: 11.5, up: 3.9, lookUp: 1.25, chaseBack: 6, chaseUp: 3.2, port: 1.12, fovLand: 52, fovPort: 60 };
+const CAM = { back: 14.5, up: 5.4, lookUp: 1.4, chaseBack: 5, chaseUp: 2.2,   // v0.15: pulled back + up (~20° down, was ~19° from closer). Keep up/back under ~0.4 or the horizon leaves the top of the screen
+  port: 1.12, fovLand: 52, fovPort: 60 };
 function gameplayCam(outP, outL, dtR) {
   const fr = 1 - Math.exp(-2.45 * (dtR == null ? 1 / 60 : dtR));   // frame-rate independent (120Hz phones used to look-ahead twice as fast)
   const th = nearestThreat();
@@ -4141,7 +4211,7 @@ function updateCamera(dtR) {
 /* ---------------- HUD ---------------- */
 const STATE_UI = {
   wander: ['WANDERING', 'He is doing roughly what you asked.', 'calm'], snack: ['SNACK LOCK', 'He is eating. You have no control at all.', 'snack'],
-  butterfly: ['BUTTERFLY!', "He's following it. Wherever it goes.", 'lost'], stare: ['SHINY…', 'Something sparkly. He is not listening.', 'lost'],
+  butterfly: ['BUTTERFLY!', "He's following it. Wherever it goes.", 'lost'], stare: ['HANDSOME…', 'He found his reflection. He is not listening.', 'lost'],
   trip: ['FACEPLANT', 'Tripped over nothing.', 'lost'], freeze: ['FROZEN', 'Terror. Total, useless terror.', 'lost'],
   panic: ['PANIC!', "He's flailing. Steer him and he sprints!", 'danger'], honk: ['HONK!', 'He bolted. Everything heard that.', 'calm'],
   hush: ['HUSH', 'Holding him still. He hates it.', 'calm'], hide: ['HIDING', 'Hidden. Keep holding. He wants out.', 'calm'],
@@ -4155,8 +4225,9 @@ const HEART_SVG = '<path d="M20 33C8 25 5 18 7 13c2-5 9-6 13 0 4-6 11-5 13 0 2 5
 const STCOL = { calm: '#fffaf0', snack: '#ffc23a', lost: '#ff9a3d', danger: '#ff3d1f' };
 const BUB = {
   berry: '<svg viewBox="0 0 40 40"><path d="M20 8c3-5 9-6 12-4-2 4-7 6-12 4z" fill="#4f9e36" stroke="#24170e" stroke-width="2"/><circle cx="14" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="26" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="20" cy="31" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="12" cy="20" r="2" fill="#fff"/></svg>',
+  berryD: '<svg viewBox="0 0 40 40"><path d="M20 8c3-5 9-6 12-4-2 4-7 6-12 4z" fill="#4f9e36" stroke="#24170e" stroke-width="2"/><circle cx="14" cy="22" r="7" fill="#8b4fd6" stroke="#24170e" stroke-width="2.5"/><circle cx="26" cy="22" r="7" fill="#8b4fd6" stroke="#24170e" stroke-width="2.5"/><circle cx="20" cy="31" r="7" fill="#8b4fd6" stroke="#24170e" stroke-width="2.5"/><circle cx="12" cy="20" r="2" fill="#fff"/></svg>',
   butterfly: '<svg viewBox="0 0 40 40"><ellipse cx="12" cy="15" rx="9" ry="8" fill="#ff9a2e" stroke="#24170e" stroke-width="2.5"/><ellipse cx="28" cy="15" rx="9" ry="8" fill="#ff9a2e" stroke="#24170e" stroke-width="2.5"/><ellipse cx="13" cy="28" rx="6" ry="6" fill="#ffc23a" stroke="#24170e" stroke-width="2.5"/><ellipse cx="27" cy="28" rx="6" ry="6" fill="#ffc23a" stroke="#24170e" stroke-width="2.5"/><rect x="18.5" y="9" width="3" height="24" rx="1.5" fill="#24170e"/></svg>',
-  sparkle: '<svg viewBox="0 0 40 40"><path d="M20 3l4 13 13 4-13 4-4 13-4-13-13-4 13-4z" fill="#8ff0ff" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+  sparkle: '<svg viewBox="0 0 40 40">' + HEART_SVG + '</svg>',
   stars: '<svg viewBox="0 0 40 40"><path d="M12 6l2 6 6 2-6 2-2 6-2-6-6-2 6-2zM28 18l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="#ffe14a" stroke="#24170e" stroke-width="2" stroke-linejoin="round"/></svg>',
   note: '<svg viewBox="0 0 40 40"><path d="M15 30V10l16-4v20" fill="none" stroke="#24170e" stroke-width="3"/><circle cx="11" cy="30" r="5" fill="#24170e"/><circle cx="27" cy="26" r="5" fill="#24170e"/></svg>',
   alarm: '!!', question: '?', zzz: 'z<small style="font-size:20px">z</small>', dots: '…'
@@ -4178,13 +4249,15 @@ function updateHUD(dtR) {
     else { const cv = concealment(D.pos.x, D.pos.z, Math.hypot(D.vel.x, D.vel.z), D.crouch); if (cv >= .99) { name = 'HIDDEN IN THE TREES'; why = "It can't see him in here. Keep it slow and quiet."; tone = 'calm'; } else if (cv >= .6) { name = 'HALF HIDDEN'; why = 'One tree helps. A cluster (or HUSH) hides him.'; tone = 'calm'; } }
     const nt = nearestSleepingTiger();
     if (nt.t && nt.d < 11) { name = nt.t.state === 'stir' ? 'IT HEARD SOMETHING' : 'TIPTOE…'; why = nt.t.state === 'stir' ? 'One eye is open. Do NOT mess up again.' : 'A sabertooth is asleep. No farting. No falling over.'; tone = nt.t.state === 'stir' ? 'danger' : 'lost'; }
-    if (th.r && isHunting(th.r)) { name = "IT'S HUNTING HIM"; why = 'It has seen him. He has not noticed.'; tone = 'danger'; }
+    if (nearestBrawl(D.pos.x, D.pos.z, 60)) { name = 'CAT FIGHT!'; why = 'They are busy with each other. Get him out of sight before it ends!'; tone = 'danger'; }
+    else if (th.r && isHunting(th.r)) { name = "IT'S HUNTING HIM"; why = 'It has seen him. He has not noticed.'; tone = 'danger'; }
     else if (th.r && (th.r.state === 'scan') && th.d < 32) { name = 'IT IS LOOKING AROUND'; why = 'Stay low. Stay still. Do not fart.'; tone = 'lost'; }
     else if (th.r && th.r.state === 'sniffBush' && th.d < 30) { name = 'IT IS CHECKING BUSHES'; why = 'If he is hiding in that one: move. Now.'; tone = 'danger'; }
     else if (th.r && (th.r.state === 'investigate' || th.r.state === 'search') && th.d < 30) { name = 'SOMETHING IS SNIFFING'; why = 'It is following a scent. Probably his.'; tone = 'lost'; }
   }
   if (key === 'hide' && th.r && th.d < 10) why = 'It is RIGHT THERE. Do not let go.';
-  if (D.chaseDist) { name = { butterfly: 'BUTTERFLY?! NOW?!', stare: 'SHINY?! NOW?!', snack: 'GULP!' }[key] || name; why = key === 'snack' ? "A berry. Mid-chase. He'll remember in a second." : "He forgot he's being chased. For a second."; tone = 'danger'; }
+  if (key === 'stare' && D.stareKind === 'fight') { name = 'WATCHING THE FIGHT'; why = 'Ringside seat. He forgot everything. Steer him away, or HONK!'; tone = 'danger'; }
+  if (D.chaseDist) { name = { butterfly: 'BUTTERFLY?! NOW?!', stare: 'HIS REFLECTION?! NOW?!', snack: 'GULP!' }[key] || name; why = key === 'snack' ? "A berry. Mid-chase. He'll remember in a second." : "He forgot he's being chased. For a second."; tone = 'danger'; }
   if (key === 'jump' && D.willWipe && D.jumpPre <= 0 && D.jumpV < 1.2) { name = 'UH OH…'; why = 'That landing is not going to go well.'; tone = 'lost'; }
   if (key === 'tumble') why = WIPE_WHY[D.wipeWhy] || why;
   if (key === 'panic' && G.time - (D.realizedAt || -99) < 1.3) { name = 'OH RIGHT. T-REX!'; why = 'He remembered. All at once.'; }
@@ -4229,7 +4302,8 @@ function updateHUD(dtR) {
   const targets = [];
   for (const r of rexes) if (r.active && G.mode === 'play' && hyp(r.x, r.z, D.pos.x, D.pos.z) < 55) targets.push({ x: r.x, y: r.y + 4, z: r.z, kind: isHunting(r) ? 'hot' : 'rex' });
   const playing = G.mode === 'play';
-  if (playing && !Q.carrying && (D.hunger > 70 || (W.belly < 45 && !wifeOff()))) { const bb = nearestRipe(D.pos.x, D.pos.z, 90, G.time); if (bb) targets.push({ x: bb.x, y: groundH(bb.x, bb.z) + 1, z: bb.z, kind: 'berry' }); }
+  if (playing && !Q.carrying && D.hunger > 70) { const bb = nearestRipe(D.pos.x, D.pos.z, 90, G.time, 'his'); if (bb) targets.push({ x: bb.x, y: groundH(bb.x, bb.z) + 1, z: bb.z, kind: 'berry' }); }
+  else if (playing && !Q.carrying && W.belly < 45 && !wifeOff()) { const bb = nearestRipe(D.pos.x, D.pos.z, 90, G.time, 'hers'); if (bb) targets.push({ x: bb.x, y: groundH(bb.x, bb.z) + 1, z: bb.z, kind: 'berryD' }); }
   if (playing && wifeOff()) targets.push({ x: W.x, y: W.y + 1.6, z: W.z, kind: 'wife' });
   if (playing && (G.dusk || G.night || (Q.carrying && !wifeOff()))) targets.push({ x: NEST.x, y: NEST.y + 1, z: NEST.z, kind: 'nest' });
   else if (playing && !Q.carrying && (W.attn < 80 || wifeOff())) { const sh = nearestGroundShiny(); if (sh && hyp(sh.x, sh.z, D.pos.x, D.pos.z) < 90) targets.push({ x: sh.x, y: groundH(sh.x, sh.z) + .5, z: sh.z, kind: 'shiny' }); }
@@ -4247,10 +4321,10 @@ function updateHUD(dtR) {
     x = cx + dx * s; y = cy + dy * s;
     if (COARSE ? (x < 240 && y > H - 290) : (x > VW - 120 && y > H - 230)) y = COARSE ? H - 290 : H - 230;   // keep clear of the buttons
     e.style.display = ''; e.style.transform = `translate(${x.toFixed(0)}px,${y.toFixed(0)}px)`;
-    e.className = 'edge' + (tg.kind === 'hot' ? ' hot' : tg.kind === 'nest' ? ' nest' : tg.kind === 'shiny' ? ' shiny' : tg.kind === 'berry' ? ' berry' : tg.kind === 'wife' ? ' wife' : '');
+    e.className = 'edge' + (tg.kind === 'hot' ? ' hot' : tg.kind === 'nest' ? ' nest' : tg.kind === 'shiny' ? ' shiny' : tg.kind === 'berry' ? ' berry' : tg.kind === 'berryD' ? ' berryD' : tg.kind === 'wife' ? ' wife' : '');
     e.firstChild.style.transform = `rotate(${(Math.atan2(dy, dx) * 180 / Math.PI + 90).toFixed(0)}deg)`;
-    const want = tg.kind === 'nest' ? 'nest' : tg.kind === 'shiny' ? 'shiny' : tg.kind === 'berry' ? 'berry' : tg.kind === 'wife' ? 'wife' : 'rex';
-    if (e.dataset.k !== want) { e.dataset.k = want; e.lastChild.innerHTML = want === 'wife' ? HEART_SVG : want === 'berry' ? BUB.berry.replace(/^<svg[^>]*>|<\/svg>$/g, '') : want === 'shiny' ? shinyIcon() : want === 'nest' ? '<ellipse cx="20" cy="26" rx="15" ry="7" fill="#8a6238" stroke="#24170e" stroke-width="2.5"/><ellipse cx="20" cy="18" rx="6" ry="8" fill="#f6efdc" stroke="#24170e" stroke-width="2.5"/>' : '<ellipse cx="20" cy="26" rx="7" ry="8" fill="#24170e"/><ellipse cx="10" cy="13" rx="3.5" ry="7" transform="rotate(-25 10 13)" fill="#24170e"/><ellipse cx="20" cy="9" rx="3.5" ry="7.5" fill="#24170e"/><ellipse cx="30" cy="13" rx="3.5" ry="7" transform="rotate(25 30 13)" fill="#24170e"/>'; }
+    const want = tg.kind === 'nest' ? 'nest' : tg.kind === 'shiny' ? 'shiny' : tg.kind === 'berry' ? 'berry' : tg.kind === 'berryD' ? 'berryD' : tg.kind === 'wife' ? 'wife' : 'rex';
+    if (e.dataset.k !== want) { e.dataset.k = want; e.lastChild.innerHTML = want === 'wife' ? HEART_SVG : want === 'berry' ? BUB.berry.replace(/^<svg[^>]*>|<\/svg>$/g, '') : want === 'berryD' ? BUB.berryD.replace(/^<svg[^>]*>|<\/svg>$/g, '') : want === 'shiny' ? shinyIcon() : want === 'nest' ? '<ellipse cx="20" cy="26" rx="15" ry="7" fill="#8a6238" stroke="#24170e" stroke-width="2.5"/><ellipse cx="20" cy="18" rx="6" ry="8" fill="#f6efdc" stroke="#24170e" stroke-width="2.5"/>' : '<ellipse cx="20" cy="26" rx="7" ry="8" fill="#24170e"/><ellipse cx="10" cy="13" rx="3.5" ry="7" transform="rotate(-25 10 13)" fill="#24170e"/><ellipse cx="20" cy="9" rx="3.5" ry="7.5" fill="#24170e"/><ellipse cx="30" cy="13" rx="3.5" ry="7" transform="rotate(25 30 13)" fill="#24170e"/>'; }
   });
 }
 
@@ -4298,7 +4372,7 @@ function updateWorld(dt, t) {
     if (!b.ripe) { b.regrow -= dt; if (b.regrow <= 0) { b.ripe = true; b.berries.visible = true; b.pop = 1; } }
     if (b.pop > 0) { b.pop = Math.max(0, b.pop - dt * 3); b.berries.scale.setScalar(1 + Math.sin(b.pop * 9) * .25 * b.pop); }
   }
-  for (const c of crystals) { c.glintT -= dt * (hyp(c.x, c.z, D.pos.x, D.pos.z) < 12 ? 2.2 : 1); if (c.glintT <= 0) { c.glintT = rand(1.2, 2.8); FX.glint(c.x + rand(-.3, .3), groundH(c.x, c.z) + rand(.7, 1.2), c.z + rand(-.3, .3)); } c.g.rotation.y += dt * .2; }
+  for (const p of pools) { p.ripT -= dt; if (p.ripT <= 0) { p.ripT = rand(1.6, 3.2); p.ripA = 1; } if (p.ripA > 0) { p.ripA = Math.max(0, p.ripA - dt * .7); const k = .15 + (1 - p.ripA) * .8; p.rip.scale.set(p.r * k, p.r * .82 * k, 1); p.rip.material.opacity = p.ripA * .55; } }
   // butterflies
   for (const bf of butterflies) {
     bf.retT -= dt; bf.fleeing -= dt;
@@ -4347,6 +4421,7 @@ function updateAudio(dtR) {
   }
   if (D.state === 'hide' && near < 14) tens = 1;
   if (awakeTiger()) chase = 1;
+  if (nearestBrawl(D.pos.x, D.pos.z, 45)) chase = Math.max(chase, .8);
   { const nt = nearestSleepingTiger(); if (nt.t && nt.d < 14) tens = Math.max(tens, (nt.t.state === 'stir' ? 1 : .6) * clamp(1 - nt.d / 14, .3, 1)); }
   let calm = clamp(1 - Math.max(chase * 1.6, tens * 1.25), 0, 1);
   const m = G.mode;
@@ -4376,6 +4451,7 @@ function updateAudio(dtR) {
    - mess up right next to one (bump, fart, trip, sneeze, honk) => it wakes
    - mess up a bit further away => it stirs (one eye opens). Mess up again => it wakes
    - awake => no escape. It is faster than a honk and hiding does not help.
+   - v0.14: it hates the T-rex even more than it likes dodo. See 5h_brawl.js.
    ===================================================================== */
 function buildTiger() {
   /* v0.13 redesign: a proper smilodon, not a striped orange caterpillar.
@@ -4469,7 +4545,7 @@ const tigers = [];
 (function placeTigers() {
   const avoid = [];
   // one deliberately naps beside a berry bush
-  const bb = berryBushes.filter(b => Math.hypot(b.x - NEST.x, b.z - NEST.z) > 20).sort((a, b) => hash2(a.x * 7 | 0, a.z * 7 | 0) - hash2(b.x * 7 | 0, b.z * 7 | 0))[0];
+  const bb = berryBushes.filter(b => b.kind === 'his' && Math.hypot(b.x - NEST.x, b.z - NEST.z) > 20).sort((a, b) => hash2(a.x * 7 | 0, a.z * 7 | 0) - hash2(b.x * 7 | 0, b.z * 7 | 0))[0];
   const spots = [];
   if (bb) { for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, x = bb.x + Math.cos(a) * 2.8, z = bb.z + Math.sin(a) * 2.8; if (groundH(x, z) > .8 && clearOf(obstacles, x, z, 1.8)) { spots.push({ x, z }); break; } } }
   for (let i = 0; i < 300 && spots.length < 3; i++) {
@@ -4486,8 +4562,8 @@ const tigers = [];
 
 
 function resetTigers() {
-  for (const t of tigers) { Object.assign(t, { x: t.hx, z: t.hz, y: groundH(t.hx, t.hz), heading: t.home, state: 'sleep', stT: 0, stAge: 0, stand: 0, speed: 0, wokeBy: '' }); t.rig.root.visible = true; }
-  D.fleeFrom = null;
+  for (const t of tigers) { Object.assign(t, { x: t.hx, z: t.hz, y: groundH(t.hx, t.hz), heading: t.home, state: 'sleep', stT: 0, stAge: 0, stand: 0, speed: 0, wokeBy: '', foe: null, brawl: null, hopY: 0, fightCD: 0, flingT: 0 }); t.rig.root.visible = true; }
+  D.fleeFrom = null; brawls.length = 0;
 }
 function setT(t, s, dur) { if (t.state !== s) t.stAge = 0; t.state = s; t.stT = dur; }
 /* every noise the dodo makes is checked against every sleeping cat */
@@ -4525,10 +4601,11 @@ function awakeTiger() { for (const t of tigers) if (t.state === 'wake' || t.stat
 
 function updateTigers(dt) {
   for (const t of tigers) {
-    t.stT -= dt; t.stAge += dt;
+    t.stT -= dt; t.stAge += dt; t.fightCD = (t.fightCD || 0) - dt;
     const dx = D.pos.x - t.x, dz = D.pos.z - t.z, d = Math.hypot(dx, dz);
     switch (t.state) {
       case 'sleep': case 'stir': {
+        { const r = rexNearCat(t, BRAWL_WAKE); if (r) { catWakesForRex(t, r, false); break; } }
         if (d < 10) hint('tiger');
         // bumping into it is always fatal; scampering past a stirred cat is too
         if (d < t.r + .45 && !D.dead && D.state !== 'sleep') { wakeTiger(t, D.state === 'jump' ? 'landed' : 'bump'); break; }
@@ -4538,6 +4615,7 @@ function updateTigers(dt) {
       }
       case 'wake': if (t.stT <= 0) setT(t, 'hunt', 0); break;
       case 'hunt': {
+        { const r = rexNearCat(t, 9); if (r) { catWakesForRex(t, r, true); break; } }
         const want = Math.atan2(dx, dz);
         t.heading += clamp(angDiff(t.heading, want), -6 * dt, 6 * dt);
         t.speed += (11.5 - t.speed) * Math.min(1, dt * 3);
@@ -4550,6 +4628,7 @@ function updateTigers(dt) {
         break;
       }
       case 'eat': t.speed *= Math.exp(-6 * dt); break;
+      case 'wakeRex': case 'chargeRex': case 'fight': case 'flee': catVsRexTick(t, dt); break;
     }
     if (t.speed > .01) {
       const ox = t.x, oz = t.z;
@@ -4557,13 +4636,14 @@ function updateTigers(dt) {
       const p = { x: t.x, z: t.z }; collide(p, .9, obstacles); t.x = p.x; t.z = p.z;
       if (groundH(t.x, t.z) < -.5) { t.x = ox; t.z = oz; }
     }
-    t.y = Math.max(groundH(t.x, t.z), -.3);
+    t.y = Math.max(groundH(t.x, t.z), -.3) + (t.hopY || 0);
   }
 }
 function animTiger(t, dt, time) {
-  const R = t.rig, P = R.P, st = t.state, K = k => Math.min(1, dt * k);
+  const R = t.rig, P = R.P, K = k => Math.min(1, dt * k), st0 = t.state;
+  const st = st0 === 'wakeRex' ? 'wake' : (st0 === 'chargeRex' || st0 === 'flee') ? 'hunt' : st0, age = t.stAge + (st0 === 'wakeRex' ? .5 : 0);
   const asleep = st === 'sleep' || st === 'stir';
-  const standTo = asleep ? 0 : (st === 'wake' ? clamp(t.stAge / .55, 0, 1) : 1);
+  const standTo = asleep ? 0 : (st === 'wake' ? clamp(age / .55, 0, 1) : 1);
   t.stand += (standTo - t.stand) * K(7);
   const s = t.stand, sp = t.speed, gal = Math.min(1, sp / 5);
   R.root.position.set(t.x, t.y, t.z); R.root.rotation.y = t.heading;
@@ -4574,12 +4654,14 @@ function animTiger(t, dt, time) {
   if (st === 'sleep') { headP = .35 + breath * .03; t.dream = (t.dream || 0) - dt; if (t.dream <= 0) { t.dream = rand(5, 11); t.dreamT = 1.3; } }
   if (st === 'stir') { headP = -.1 + Math.sin(time * 1.1) * .05; headY = Math.sin(time * .7) * .45; earPerk = 1; tailWag = Math.sin(time * 6) * .5; if (t.stAge < 1.2) jaw = Math.sin(clamp(t.stAge / 1.2, 0, 1) * Math.PI) * .9; }   // a big yawn
   if (st === 'wake') {
-    const a = t.stAge;
+    const a = age;
     if (a > .45 && a < 1.0) { const k = Math.sin((a - .45) / .55 * Math.PI); torsoP = .45 * k; headP = .2 * k; }                     // the cat stretch: chest down, rump up
     if (a > .7) { jaw = Math.min(1, (a - .7) * 4) * 1.0; headP = -.45; earPerk = -1; }                                             // yowl, ears pinned back
     tailUp = 1;
   }
   if (st === 'hunt') { flex = Math.sin(ph * 2) * .22 * gal; torsoY += Math.abs(Math.sin(ph * 2)) * .14 * gal; headP = .15; earPerk = -1; tailUp = .6; tailWag = Math.sin(ph * 2) * .3; jaw = .25; }
+  if (st0 === 'flee') { jaw = 0; earPerk = -1; tailUp = t.smug ? .8 : 0; headP = t.smug ? -.1 : .3; }
+  if (st === 'fight') { const k = Math.sin(time * 13 + t.hx); torsoP = -.25 + k * .2; flex = k * .25; headP = -.3; jaw = .8 + .2 * Math.sin(time * 20); earPerk = -1; tailUp = 1; tailWag = Math.sin(time * 16) * .8; torsoY += (t.hopY || 0) * .1; }
   if (st === 'pounce') { torsoP = -.4; flex = -.25; headP = -.15; jaw = 1; earPerk = -1; tailUp = 1; torsoY += Math.sin(clamp(t.stAge / .32, 0, 1) * Math.PI) * .9; }
   if (st === 'eat') { const T = G.tigerKiller === t ? G.deathT : 9; headP = T < 1.7 ? .35 : -.1; headY = (T > .5 && T < 1.7) ? Math.sin(T * 27) * .55 : 0; jaw = T < 1.7 ? .3 : 0; earPerk = -1; }
   R.torso.position.y += (torsoY - R.torso.position.y) * K(10);
@@ -4590,6 +4672,7 @@ function animTiger(t, dt, time) {
   for (const l of P.legs) {
     let u, w;
     if (st === 'pounce') { u = l.front ? -1.25 : 1.1; w = l.front ? .3 : -.4; }
+    else if (st === 'fight') { u = l.front ? -1.1 + Math.sin(time * 17 + l.sd * 2) * .7 : .7 + Math.sin(time * 9 + l.sd) * .3; w = l.front ? .2 + Math.max(0, Math.sin(time * 17 + l.sd * 2)) * .5 : -.3; }
     else {
       const lp = ph * 2 + (l.front ? 0 : Math.PI * .85) + (l.sd > 0 ? 0 : .5);
       u = Math.sin(lp) * .8 * gal; w = (l.front ? 1 : -1) * Math.max(0, -Math.cos(lp)) * .9 * gal;
@@ -4658,7 +4741,7 @@ const Q = { delivered: 0, carrying: null, nagT: 0 };
 const quota = () => 2 + G.day;   // (v0.12: no longer the daily goal; Doda's meters are)
 
 function makeShinyMesh(i) {
-  const m = new THREE.Mesh(SHINY_GEO, i % 3 === 2 ? SHINY_MAT2 : SHINY_MAT);
+  const m = new THREE.Mesh(SHINY_GEO, SHINY_MAT);   // v0.14: always gold. The pale-blue ones looked like the old crystals
   m.scale.set(1, .75, 1); m.castShadow = true;
   const o = new THREE.Mesh(SHINY_GEO, outlineMat(.03)); m.add(o);
   scene.add(m); return m;
@@ -4701,7 +4784,7 @@ function respawnShinies() {
   const p = placeShiny(pick(SHINY_KINDS), taken); if (p) addShiny(p);
 }
 /* a berry he picked for Doda (he might eat it on the way) */
-const BERRY_ITEM_GEO = (() => { const b = new Builder(); [[0, 0, 0], [.13, -.04, .05], [-.11, -.05, .06]].forEach(p => { b.add(GEO.sphLo, 0xe5303e, p, .12); b.add(GEO.sphLo, 0xffd0d4, [p[0] - .04, p[1] + .06, p[2] + .05], .03); }); b.add(GEO.sph, 0x5fae3a, [0, .12, -.04], [.12, .02, .17], [0, 0, .3]); return b.bake(); })();
+const BERRY_ITEM_GEO = (() => { const b = new Builder(); [[0, 0, 0], [.13, -.04, .05], [-.11, -.05, .06]].forEach(p => { b.add(GEO.sphLo, 0x8b4fd6, p, .12); b.add(GEO.sphLo, 0xe6d4ff, [p[0] - .04, p[1] + .06, p[2] + .05], .03); }); b.add(GEO.sph, 0x5fae3a, [0, .12, -.04], [.12, .02, .17], [0, 0, .3]); return b.bake(); })();
 function pluckBerry(b) {
   b.ripe = false; b.berries.visible = false; b.regrow = 22; b.wob = 1;
   const m = new THREE.Mesh(BERRY_ITEM_GEO, toonVC()); m.castShadow = true;
@@ -4736,7 +4819,7 @@ function updateShinies(dt, t) {
     s.mesh.rotation.y += dt * 1.6; s.mesh.rotation.x = Math.sin(t + s.ph) * .3;
     s.glT -= dt; if (s.kind === 'shiny' && s.glT <= 0) { s.glT = rand(.5, 1.2); FX.glint(s.x + rand(-.15, .15), gy + .45, s.z + rand(-.15, .15)); if (Math.random() < .5) FX.sparkle(s.x, gy + .2, s.z, 1, .9, .4); }
     // pick up with his beak
-    if (G.mode === 'play' && !Q.carrying && !D.dead && !(s.noPick > G.time) && !(D.hunger > 80 && D.state === 'wander' && nearestRipe(D.pos.x, D.pos.z, 9, G.time)) && ['drown', 'sleep', 'tummy', 'snack', 'tumble'].indexOf(D.state) < 0 && hyp(s.x, s.z, D.pos.x, D.pos.z) < 1.9) {
+    if (G.mode === 'play' && !Q.carrying && !D.dead && !(s.noPick > G.time) && !(D.hunger > 80 && D.state === 'wander' && nearestRipe(D.pos.x, D.pos.z, 9, G.time, 'his')) && ['drown', 'sleep', 'tummy', 'snack', 'tumble'].indexOf(D.state) < 0 && hyp(s.x, s.z, D.pos.x, D.pos.z) < 1.9) {
       Q.carrying = s; s.state = 'carried'; scene.remove(s.mesh); DR.P.beakTip.add(s.mesh);
       s.mesh.position.set(0, 0, 0); s.mesh.scale.set(.8, .6, .8);
       if (s.kind === 'berry') { popup('got it back!', D.pos.x, D.y + 2.3, D.pos.z, 'nom', 1.1); S.chime(0); D.temptCD = 3; }
@@ -4998,6 +5081,7 @@ function updateAmbience() {
 const ICON = {
   shiny: () => '<svg viewBox="0 0 40 40">' + shinyIcon() + '</svg>',
   berry: () => BUB.berry,
+  berryD: () => BUB.berryD,
   rex: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="26" rx="7" ry="8" fill="#24170e"/><ellipse cx="10" cy="13" rx="3.5" ry="7" transform="rotate(-25 10 13)" fill="#24170e"/><ellipse cx="20" cy="9" rx="3.5" ry="7.5" fill="#24170e"/><ellipse cx="30" cy="13" rx="3.5" ry="7" transform="rotate(25 30 13)" fill="#24170e"/></svg>',
   nest: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="26" rx="15" ry="7" fill="#8a6238" stroke="#24170e" stroke-width="2.5"/><ellipse cx="20" cy="18" rx="6" ry="8" fill="#f6efdc" stroke="#24170e" stroke-width="2.5"/></svg>',
   sun: () => '<svg viewBox="0 0 40 40"><path d="M7 27a13 13 0 0 1 26 0z" fill="#ff8a4c" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 31h32M20 6v4M8 12l3 3M32 12l-3 3" stroke="#24170e" stroke-width="2.5" stroke-linecap="round"/></svg>',
@@ -5011,7 +5095,7 @@ const li = (k, b, s, cls) => `<li${cls ? ' class="' + cls + '"' : ''}>${gi(k)}<s
 /* the four jobs. Same words everywhere: menu, intro card, how-to-play */
 function goalsHTML(day) {
   return li('heart', 'Keep Doda on the egg', 'Bring her shinies. She gets bored fast.') +
-    li('berry', 'Feed them both', 'He eats at bushes. Carry berries to her.') +
+    li('berry', 'Feed them both', 'Red berries are his. Purple are hers: walk him into a purple bush to pick one.') +
     li('rex', 'Stay out of sight', 'Trees and bushes block its view.', 'rexLine') +
     li('sun', 'Both in the nest by sunset', 'Survive 3 days and the egg hatches.');
 }
@@ -5043,16 +5127,16 @@ function currentObjective() {
   if (rexes.some(r => r.active && /W$/.test(r.state))) return ['rex', "It's going for Doda! HONK near it to distract it", 1];
   if (th.r && isHunting(th.r) && th.d < 30) return ['rex', 'Escape! Go sideways, or into the trees', 1];
   if (awakeTiger()) return ['rex', 'A cat woke up. RUN!', 1];
-  if (D.state === 'tempted') return ['berry', "HOLD HUSH! That's Doda's berry", 1];
+  if (D.state === 'tempted') return ['berryD', "HOLD HUSH! That's Doda's berry", 1];
   if (off) {
     if (W.warm < 45) return ['heart', W.state === 'follow' ? 'Egg is cooling! Lead her home NOW' : 'Egg is cooling! Get Doda back on it', 1];
     if (W.state === 'follow') return ['heart', 'She is following! Lead her home', 1];
     return Q.carrying ? ['heart', 'Walk past Doda. She will follow it home', 1] : ['shiny', 'Doda left! Grab a shiny to lure her home', 1];
   }
   if (G.night || G.dusk) return ['nest', (G.night ? 'Dark!' : 'Sunset!') + ' Get him home to bed', 1];
-  if (D.hunger > 72) return Q.carrying ? ['nest', 'He is starving! Deliver that, then eat', D.hunger > 88] : ['berry', "He's starving. Find berries", D.hunger > 88];
-  if (Q.carrying) return ['heart', berry ? "Bring the berry to Doda (don't let him eat it)" : 'Bring the shiny to Doda', 0];
-  if (W.belly < 40) return ['berry', 'Doda is hungry: pick her a berry', W.belly < 20];
+  if (D.hunger > 72) return Q.carrying ? ['nest', 'He is starving! Deliver that, then eat', D.hunger > 88] : ['berry', "He's starving. Find a RED berry bush", D.hunger > 88];
+  if (Q.carrying) return [berry ? 'berryD' : 'heart', berry ? "Bring the berry to Doda (don't let him eat it)" : 'Bring the shiny to Doda', 0];
+  if (W.belly < 40) return ['berryD', 'Doda is hungry: walk him into a PURPLE bush', W.belly < 20];
   if (W.attn < 45) return ['shiny', 'Doda is getting bored: find a shiny', W.attn < 20];
   return ['shiny', W.attn < 80 ? 'Find shinies for Doda' : 'Doda is happy. Stock up on shinies', 0];
 }
@@ -5162,7 +5246,7 @@ $('winMenu').addEventListener('click', () => { S.pop(); toTitle(); });
 /* =====================================================================
    5f_wife (v0.12): DODA. The last other dodo on Earth, sitting on the last egg.
    - She sits on the nest in the home grove, where nothing big can get her.
-   - ATTENTION drains. Shinies refill it. At zero she gets bored and wanders off to stare at sparkly rocks.
+   - ATTENTION drains. Shinies refill it. At zero she gets bored and wanders off to admire herself in a puddle (v0.14; was sparkly rocks).
    - BELLY drains. Berries (carried to her one at a time) refill it. At zero she goes looking for food.
    - Off the nest, the EGG cools. A cold egg ends the run.
    - Carry anything near her and she follows it home, mesmerised (the lure).
@@ -5192,9 +5276,9 @@ function resetWife(first) {
 
 /* ---- what she does ---- */
 function wifeTarget(kind) {
-  if (kind === 'food') { const b = nearestRipe(W.x, W.z, 70, G.time); if (b) return { x: b.x, z: b.z, bush: b }; }
-  const c = nearestOf(crystals.filter(c => hyp(c.x, c.z, NEST.x, NEST.z) < 60), W.x, W.z, 60);
-  if (c && Math.random() < .7) return { x: c.x, z: c.z, crystal: c };
+  if (kind === 'food') { const b = nearestRipe(W.x, W.z, 70, G.time, 'hers'); if (b) return { x: b.x, z: b.z, bush: b }; }
+  const c = nearestOf(pools.filter(c => hyp(c.x, c.z, NEST.x, NEST.z) < 60), W.x, W.z, 60);
+  if (c && Math.random() < .7) { const dx = W.x - c.x, dz = W.z - c.z, l = Math.hypot(dx, dz) || 1; return { x: c.x + dx / l * (c.r + .9), z: c.z + dz / l * (c.r + .9), pool: c }; }
   for (let i = 0; i < 20; i++) { const a = rand(0, TAU), d = rand(SANCT_R + 6, SANCT_R + 26), x = NEST.x + Math.cos(a) * d, z = NEST.z + Math.sin(a) * d; if (groundH(x, z) > .6) return { x, z }; }
   return { x: NEST.x + 18, z: NEST.z };
 }
@@ -5244,7 +5328,7 @@ function updateWife(dt) {
       const d = wifeMove(t.x, t.z, 1.35, dt);
       if (d < 1.6) {
         if (t.bush && t.bush.ripe) { t.bush.ripe = false; t.bush.berries.visible = false; t.bush.regrow = 25; W.belly = Math.min(100, W.belly + 55); wPop('nom nom', 'nom', 1.3); S.munch && S.munch(); W.why = 'bored'; W.target = null; }
-        else if (t.crystal) { wSet('stare', 999); wPop('ooooh. sparkly.', 'small blue', 1.6); }
+        else if (t.pool) { wSet('stare', 999); W.target = { x: t.pool.x, z: t.pool.z, pool: t.pool }; wPop(pick(['ooh. who is THAT?', 'hello, gorgeous', 'ooh. pretty bird.']), 'small blue', 1.6); }
         else W.target = wifeTarget(W.why);
       }
       break;
@@ -5252,7 +5336,7 @@ function updateWife(dt) {
     case 'stare': {
       W.speed = 0; if (W.target) W.heading += clamp(angDiff(W.heading, Math.atan2(W.target.x - W.x, W.target.z - W.z)), -3 * dt, 3 * dt);
       if (lure) { wSet('follow'); wPop('…a BETTER shiny ♥', 'nom', 1.4); sayW('ooh', { prio: 3 }); break; }
-      if (W.popT <= 0) { W.popT = rand(6, 10); wPop(pick(['so pretty', 'mine', '…']), 'small blue', 1.4); }
+      if (W.popT <= 0) { W.popT = rand(6, 10); wPop(pick(['so pretty', 'hello, me', '…', 'mwah']), 'small blue', 1.4); }
       break;
     }
     case 'follow': {
@@ -5361,8 +5445,8 @@ function killWife(kind, r) {
   if (r) { setR(r, 'eat', 9); r.speed = 0; G.ts = .25; G.slowT = .8; S.chomp(1.1); sayW('eek', { prio: 9 }); say('scream', { prio: 9 }); G.shake = 1; flash(.6); FX.feathers(W.x, W.y + .8, W.z, 34, 1.3); const m = rexMouth(r); popup('CHOMP!', m.x, m.y + 3.2, m.z, 'huge', 1.4, .5); }
   else { S.thud(); popup('…', NEST.x, NEST.y + 1.6, NEST.z, 'big blue', 2); }
   W.state = 'dead';
-  D.cause = kind === 'egg' ? pick(['The egg got cold. Doda was busy staring at a rock.', 'Nobody sat on the egg. Turns out that matters.', 'Cold egg. Last one on Earth. No pressure.'])
-    : pick(['Doda wandered off to look at something sparkly. The T-rex found her first.', 'She just wanted to see the shiny rock.', 'Left the nest for a crystal. Did not come back.', 'He was busy. She was bored. It was hungry.']);
+  D.cause = kind === 'egg' ? pick(['The egg got cold. Doda was busy admiring herself in a puddle.', 'Nobody sat on the egg. Turns out that matters.', 'Cold egg. Last one on Earth. No pressure.'])
+    : pick(['Doda wandered off to admire her reflection. The T-rex found her first.', 'She just wanted one more look at herself.', 'Left the nest for a puddle. Did not come back.', 'He was busy. She was bored. It was hungry.']);
   document.body.classList.add('cine'); hideToast();
 }
 function wifeDyingTick(T, dtR) {
@@ -5637,6 +5721,166 @@ function copyReport() {
   if (want) perfShow(true);
 })();
 window.addEventListener('keydown', e => { if ((e.key === 'F3' || e.key === '`') && !e.repeat) { e.preventDefault(); perfShow(!PD.open); } });
+
+/* =====================================================================
+   5h_brawl (v0.14): T-REX vs SABERTOOTH. A first-time player's instinct, made real.
+   - A T-rex that comes within ~7m of a sleeping cat wakes it. The cat HATES the T-rex (more than it
+     likes dodo): it yowls, charges and jumps it. A cat already hunting him switches to the T-rex too.
+   - They brawl for 5-10s in a cloud of dust, fur and swear-words. Neither is looking at the dodo.
+   - Then one wins. Rex wins (65%): the cat gets flung and slinks home to sulk, one eye open.
+     Cat wins (35%): the T-rex gets bopped and faceplants. Either way it has lost track of him...
+     unless he's still standing there in plain sight when it shakes it off.
+   - Every joke is a threat: he LOVES a fight. Leave him unsteered nearby and he stops to watch.
+   ===================================================================== */
+const BRAWL_WAKE = 7, BRAWL_TOUCH = 2.3;
+const brawls = [];
+const BRAWL_WORDS = ['WHACK!', 'HISS!', 'RAWR!', 'THWUMP!', 'MRROWR!', 'POW!', 'SCRATCH!', '#@%&!', 'BITE!', 'OOF!', 'YOWL!', 'CHOMP?!', 'BONK!', 'GRRR!'];
+const _bp = { x: 0, z: 0 };
+
+function nearestBrawl(x, z, R) { let best = null, bd = R; for (const b of brawls) { const d = hyp(b.x, b.z, x, z); if (d < bd) { bd = d; best = b; } } return best; }
+function brawlPan(x) { return clamp((x - camera.position.x) / 30, -1, 1); }
+function furTuft(x, y, z) {
+  for (let i = 0; i < 4; i++) { const a = rand(0, TAU), v = rand(1.5, 4); PS.emit({ x, y, z, vx: Math.cos(a) * v, vy: rand(2, 4.5), vz: Math.sin(a) * v, life: rand(1.2, 2), s0: .2, s1: .14, r: .79, g: .56, b: .32, drag: 2.6, grav: -2.4, wob: 1.4 }); }
+}
+
+/* a T-rex close enough to this cat to start something? */
+function rexNearCat(t, R) {
+  if (G.mode !== 'play' || (t.fightCD || 0) > 0) return null;
+  for (const r of rexes) {
+    if (!r.active || r.state === 'eat' || r.state === 'fight' || (r.fightCD || 0) > 0) continue;
+    if (hyp(t.x, t.z, r.x, r.z) < R + (r.rig.scale - 1) * 2) return r;
+  }
+  return null;
+}
+
+/* the cat wakes up (or looks up from hunting him) and sees the T-rex */
+function catWakesForRex(t, r, wasHunting) {
+  t.foe = r; t.wokeBy = 'rex'; setT(t, 'wakeRex', wasHunting ? .35 : .8); t.speed *= .3;
+  t.heading = Math.atan2(r.x - t.x, r.z - t.z);
+  const h = tigerHead(t); popup(wasHunting ? 'HSSSSS!' : 'MRRROWR?!', h.x, h.y + 1.2, h.z, 'huge', 1.5, .6);
+  const dd = hyp(t.x, t.z, D.pos.x, D.pos.z);
+  S.yowl(clamp(1 - dd / 60, .15, .9));
+  if (wasHunting) { D.panicT = Math.min(D.panicT, 2.5); if (D.fleeFrom === t) D.fleeFrom = null; }
+  if (dd < 45) showBanner(wasHunting ? 'THE CAT SAW THE T-REX!' : 'THE T-REX WOKE THE CAT!');
+}
+
+function startBrawl(t, r) {
+  const dur = rand(5, 10);
+  setT(t, 'fight', dur); t.speed = 0; t.fa = Math.atan2(t.x - r.x, t.z - r.z); t.fdir = Math.random() < .5 ? 1 : -1;
+  setR(r, 'fight', dur + 1); r.speed = 0; r.foe = t; r.rig.lane.visible = false; r.postFight = false;
+  const b = { t, r, x: (t.x + r.x) / 2, z: (t.z + r.z) / 2, live: true, popT: .25, sndT: 0, dustT: 0, stompT: .2 };
+  brawls.push(b); t.brawl = b; r.brawl = b;
+  RUN.brawl = (RUN.brawl || 0) + 1;
+  const dd = hyp(b.x, b.z, D.pos.x, D.pos.z), gy = groundH(b.x, b.z);
+  popup('SCRAP!', b.x, gy + 5, b.z, 'huge', 1.4, .6);
+  S.roar(clamp(1 - dd / 95, .1, .9), brawlPan(b.x), r.id === 1); G.shake = Math.max(G.shake, .5 * clamp(1 - dd / 40, .1, 1));
+  FX.dust(b.x, gy, b.z, 18, 1.8);
+  if (dd < 50) { showBanner('CAT FIGHT! RUN!', true); hint('brawl'); }
+}
+
+function endBrawl(b) {
+  b.live = false; const i = brawls.indexOf(b); if (i >= 0) brawls.splice(i, 1);
+  const t = b.t, r = b.r, catWins = Math.random() < .35, gy = groundH(b.x, b.z);
+  const dd = hyp(b.x, b.z, D.pos.x, D.pos.z), v = clamp(1 - dd / 70, .1, 1);
+  t.brawl = null; t.hopY = 0; t.fightCD = 35;
+  r.brawl = null; r.foe = null; r.fightCD = 15; r.postFight = true; r.chaseT = 0; r.lungeCD = Math.max(r.lungeCD, 1.5);
+  FX.dust(b.x, gy, b.z, 16, 1.8); furTuft(t.x, t.y + 1, t.z);
+  if (catWins) {
+    setR(r, 'faceplant', 2.6); S.boing(); S.bonk(); S.grunt(.8 * v); G.shake = Math.max(G.shake, .4 * v);
+    const hp = rexHeadWorld(r); popup('BOP!', hp.x, hp.y + 1.2, hp.z, 'huge', 1.3, .5);
+    catGoHome(t, true);
+    if (dd < 50 && G.mode === 'play') showBanner('THE CAT WON!', true);
+  } else {
+    setR(r, 'recover', 1.4); S.huff(clamp(1 - dd / 50, .2, .9), brawlPan(r.x));
+    const a = Math.atan2(t.x - r.x, t.z - r.z); t.flingVX = Math.sin(a) * 9; t.flingVZ = Math.cos(a) * 9; t.flingT = .55;
+    const h = tigerHead(t); popup('YEOWWW!', h.x, h.y + 1, h.z, 'huge', 1.3, .6); S.yowl(v);
+    catGoHome(t, false);
+    if (dd < 50 && G.mode === 'play') showBanner('T-REX WINS!', true);
+  }
+}
+
+function catGoHome(t, smug) {
+  t.foe = null; t.smug = smug; setT(t, 'flee', 20);
+  if (smug) { const h = tigerHead(t); popup('hmph.', h.x, h.y + 1, h.z, 'small', 1.4); }
+}
+
+/* he loves a fight: stops dead to watch it (5_game.js calls this from his idle distractions) */
+function startWatch(b) {
+  if (Q.carrying && Math.random() < .3) dropShiny('dropped it to watch the fight');
+  setS('stare', rand(2.2, 3.2), 'He stopped to watch the fight.'); D.stareKind = 'fight';
+  D.target = b; D.lookAt = b; D.watchedAt = G.time; RUN.lost++; think('stars', 999);
+  popup(pick(['ooh! a fight!', 'FIGHT! FIGHT!', 'get him!', '…whoa.']), D.pos.x, D.y + 2.2, D.pos.z, 'big', 1.2);
+  say('oohDream', { prio: 3 }); hint('watch');
+}
+
+/* per-frame for a cat in one of the T-rex states (called from updateTigers) */
+function catVsRexTick(t, dt) {
+  const r = t.foe;
+  switch (t.state) {
+    case 'wakeRex': {
+      t.speed *= Math.exp(-6 * dt);
+      if (r) t.heading += clamp(angDiff(t.heading, Math.atan2(r.x - t.x, r.z - t.z)), -6 * dt, 6 * dt);
+      if (t.stT <= 0) setT(t, r ? 'chargeRex' : 'flee', 8);
+      break;
+    }
+    case 'chargeRex': {
+      if (!r || !r.active || r.state === 'eat' || t.stT <= 0) { catGoHome(t, false); break; }
+      t.heading += clamp(angDiff(t.heading, Math.atan2(r.x - t.x, r.z - t.z)), -7 * dt, 7 * dt);
+      t.speed += (13 - t.speed) * Math.min(1, dt * 4);
+      if (hyp(t.x, t.z, r.x, r.z) < BRAWL_TOUCH + 1.55 * r.rig.scale) {
+        if (r.state === 'fight') catGoHome(t, false);    // already busy with another cat
+        else { S.whoosh(); startBrawl(t, r); }
+      }
+      break;
+    }
+    case 'fight': {
+      const b = t.brawl;
+      if (!b || !r) { catGoHome(t, false); break; }
+      // the cat circles the T-rex, leaping in and out; the rex spins round trying to bite it
+      if (Math.random() < dt * .9) t.fdir *= -1;
+      t.fa += t.fdir * dt * (2.2 + Math.sin(t.stAge * 3.1) * 1.2);
+      const rad = 1.4 + 1.55 * r.rig.scale + Math.sin(t.stAge * 5.3) * .6;
+      _bp.x = r.x + Math.sin(t.fa) * rad; _bp.z = r.z + Math.cos(t.fa) * rad;
+      collide(_bp, .9, obstacles);
+      if (groundH(_bp.x, _bp.z) > -.4) { t.x = _bp.x; t.z = _bp.z; }
+      t.heading = Math.atan2(r.x - t.x, r.z - t.z); t.speed = 0;
+      t.hopY = Math.max(0, Math.sin(t.stAge * 7.7)) * 1.4;
+      r.heading += clamp(angDiff(r.heading, Math.atan2(t.x - r.x, t.z - r.z)), -2.6 * dt, 2.6 * dt);
+      b.x = (t.x + r.x) / 2; b.z = (t.z + r.z) / 2;
+      // dust, fur, swear-words, noise
+      const gy = groundH(b.x, b.z), dd = hyp(b.x, b.z, D.pos.x, D.pos.z), v = clamp(1 - dd / 70, .08, 1), pn = brawlPan(b.x);
+      b.dustT -= dt; if (b.dustT <= 0) { b.dustT = .1; FX.dust(b.x + rand(-1.5, 1.5), gy, b.z + rand(-1.5, 1.5), 3, 1.7); if (Math.random() < .3) furTuft(t.x, t.y + 1, t.z); }
+      b.popT -= dt; if (b.popT <= 0) { b.popT = rand(.45, .8); popup(pick(BRAWL_WORDS), b.x + rand(-2, 2), gy + rand(3, 5.5), b.z + rand(-2, 2), pick(['big', 'huge', 'big red']), 1, .5); }
+      b.sndT -= dt; if (b.sndT <= 0) {
+        b.sndT = rand(.35, .7); const k = Math.random();
+        if (k < .3) S.yowl(v * .8); else if (k < .5) S.growl(v, pn); else if (k < .7) S.rexGrowl(v * .9, pn); else if (k < .87) S.bark(v, pn, r.id === 1); else if (dd < 30) S.thud();
+      }
+      b.stompT -= dt; if (b.stompT <= 0) { b.stompT = rand(.3, .55); rexFootstep(r, Math.random() < .5 ? 1 : -1); if (Math.random() < .35) S.chomp(v * .5); }
+      G.shake = Math.max(G.shake, .18 * Math.pow(clamp(1 - dd / 35, 0, 1), 2));
+      if (t.stT <= 0) endBrawl(b);
+      break;
+    }
+    case 'flee': {
+      // flung through the air first (if it lost), then home to sulk
+      if (t.flingT > 0) {
+        t.flingT -= dt; t.speed = 0;
+        _bp.x = t.x + t.flingVX * dt; _bp.z = t.z + t.flingVZ * dt; collide(_bp, .9, obstacles);
+        if (groundH(_bp.x, _bp.z) > -.4) { t.x = _bp.x; t.z = _bp.z; }
+        t.hopY = Math.sin((1 - Math.max(0, t.flingT) / .55) * Math.PI) * 1.6;
+        if (t.flingT <= 0) { t.hopY = 0; FX.dust(t.x, groundH(t.x, t.z), t.z, 8, 1.2); S.thud && hyp(t.x, t.z, D.pos.x, D.pos.z) < 30 && S.thud(); }
+        break;
+      }
+      t.hopY = 0;
+      t.heading += clamp(angDiff(t.heading, Math.atan2(t.hx - t.x, t.hz - t.z)), -6 * dt, 6 * dt);
+      t.speed += ((t.smug ? 5 : 9.5) - t.speed) * Math.min(1, dt * 3);
+      if (hyp(t.x, t.z, t.hx, t.hz) < 1 || t.stT <= 0) {
+        t.x = t.hx; t.z = t.hz; t.heading = t.home; t.speed = 0; setT(t, 'stir', 8);
+        const h = tigerHead(t); popup(t.smug ? '…zzz. (smug)' : '…grr.', h.x, h.y + .9, h.z, 'small', 1.4);
+      }
+      break;
+    }
+  }
+}
 
 /* =====================================================================
    6_main: input, loop, sequencing, tuning rack
@@ -5958,7 +6202,7 @@ function tick(dtR) {
   PERF.lap('audio');
 }
 frame();
-window.__dodo = { clip: (n, k) => clipData(n, k || 0), scene, trees, W, perfReport: () => reportText(), PD, get WIFE_HOOKS() { return { wifeOff, killWife }; }, G, D, rexes, RUN, TUN, butterflies, crystals, rocks, groundH, A, RAW, S, say, newRun, kill, input, bb: berryBushes, bushes, tigers, Q, shinies, quota, NEST, step(n, dt) { for (let i = 0; i < n; i++) tick(dt || 1 / 60); }, QUAL, cam: camera, DR, render: () => { renderer.render(scene, camera); if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); } }, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, progs: renderer.info.programs.length }) };
+window.__dodo = { clip: (n, k) => clipData(n, k || 0), scene, trees, W, perfReport: () => reportText(), PD, get WIFE_HOOKS() { return { wifeOff, killWife }; }, G, D, rexes, RUN, TUN, butterflies, pools, brawls, rocks, groundH, A, RAW, S, say, newRun, kill, input, bb: berryBushes, bushes, tigers, Q, shinies, quota, NEST, step(n, dt) { for (let i = 0; i < n; i++) tick(dt || 1 / 60); }, QUAL, cam: camera, DR, render: () => { renderer.render(scene, camera); if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); } }, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, progs: renderer.info.programs.length }) };
 
 })();
 </script>
