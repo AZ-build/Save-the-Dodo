@@ -2,8 +2,9 @@
 
 *You can't control him. You can only try.*
 
-A run-based survival comedy. Nudge a magnificently stupid dodo around an island, collect shinies for his
-nest, and get him home by sunset. Something enormous is hungry. Several somethings are asleep.
+A run-based survival comedy. The last two dodos on Earth: a magnificently stupid dodo and Doda, sitting on the last egg.
+Keep her on the egg with shinies, feed them both, stay out of the T-rex's sight, and get both of them into the nest by sunset.
+Survive three days and the egg hatches.
 
 **Play:** open the GitHub Pages link on your phone, then add it to your home screen
 (iPhone: Share → Add to Home Screen · Android: ⋮ → Install app). It works offline after the first load.

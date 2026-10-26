@@ -340,7 +340,7 @@ button.pill:focus-visible{outline:3px solid var(--sea);outline-offset:3px}
 .goals li,.mList li{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:center;line-height:1.25}
 .gi{width:38px;height:38px;border-radius:50%;border:2.5px solid var(--ink);background:var(--paper2);display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 0 var(--ink)}
 .gi svg{width:24px;height:24px;overflow:visible}
-.gi.shiny{background:#fff3c4}.gi.berry{background:#ffd6da}.gi.rex{background:#ffcdc2}.gi.sun{background:#ffd9a8}.gi.warn{background:#ffe08a}
+.gi.shiny{background:#fff3c4}.gi.berry{background:#ffd6da}.gi.rex{background:#ffcdc2}.gi.sun{background:#ffd9a8}.gi.warn{background:#ffe08a}.gi.heart{background:#ffd3df}.gi.wave{background:#c8eef5}
 .goals b,.mList b{font-weight:900;font-size:15px;display:block}
 .goals small,.mList small{font-size:13px;font-weight:700;color:var(--mute);display:block}
 .ctrls{display:flex;flex-direction:column;gap:7px}
@@ -375,6 +375,23 @@ button.pill:focus-visible{outline:3px solid var(--sea);outline-offset:3px}
 body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
 #hudR{right:calc(max(14px,env(safe-area-inset-right,0px)) + 58px)}
 #rack{top:calc(176px + env(safe-area-inset-top,0px))}
+
+/* Doda's needs */
+#dodaRow{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:900;letter-spacing:.06em}
+#dodaRow .dn{color:#c2416b}
+#dodaRow .dm{display:flex;align-items:center;gap:3px;flex:1 1 0;min-width:0}
+#dodaRow svg{width:16px;height:16px;flex:0 0 auto}
+.db{flex:1 1 auto;height:9px;border:2px solid var(--ink);border-radius:6px;background:#f1e2c0;overflow:hidden;min-width:26px}
+.db i{display:block;height:100%;width:50%;background:#ffc23a;transition:width .3s}
+#dBelly{background:#e8434f}
+.db.low{animation:blink .6s steps(2) infinite}
+#dEgg{--w:1;width:15px;height:19px;border:2px solid var(--ink);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;flex:0 0 auto;
+  background:linear-gradient(to top,#f6efdc calc(var(--w)*100%),#a9c8f0 calc(var(--w)*100%))}
+#dEgg.cold{animation:pulse .6s ease-in-out infinite}
+#dodaRow.away .dn::after{content:" AWAY!";color:var(--danger)}
+.edge.wife{background:#ffc6d6;animation:pulse .7s ease-in-out infinite}
+#winCard .card{width:min(520px,100%);text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center;transform:rotate(-1deg)}
+@media (max-width:820px),(max-height:500px){ #dodaRow{font-size:10px;gap:5px} #dodaRow svg{width:13px;height:13px} .db{height:7px;min-width:22px} #dEgg{width:12px;height:15px} }
 
 /* objective tracker: the one thing to do right now */
 #objRow{display:flex;gap:7px;align-items:center;background:var(--ink);color:var(--paper);border-radius:10px;padding:5px 9px 5px 6px;font-weight:900;font-size:13px;line-height:1.2;transform-origin:left center}
@@ -443,9 +460,14 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     </div>
     <div id="dayHint">Sunset in 2:40</div>
     <div id="objRow"><span id="objIco" aria-hidden="true"></span><span id="objTxt">Find a shiny</span></div>
-    <div id="shinyRow"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5l11 10-11 20L9 15z" fill="#ffd86b" stroke="#24170e" stroke-width="3" stroke-linejoin="round"/></svg><span>Shinies</span><b id="shinyTxt">0 / 3</b></div>
+    <div id="dodaRow" aria-label="Doda: attention, belly and egg">
+      <span class="dn">DODA</span>
+      <span class="dm" title="Attention (shinies)"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 5l11 10-11 20L9 15z" fill="#ffd86b" stroke="#24170e" stroke-width="3" stroke-linejoin="round"/></svg><span class="db"><i id="dAttn"></i></span></span>
+      <span class="dm" title="Belly (berries)"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="14" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="26" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="20" cy="31" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/></svg><span class="db"><i id="dBelly"></i></span></span>
+      <span id="dEgg" title="The egg (warm while she sits on it)"></span>
+    </div>
     <div>
-      <div class="mlab"><span>Belly</span><span id="bellyTxt">peckish</span></div>
+      <div class="mlab"><span>His belly</span><span id="bellyTxt">peckish</span></div>
       <div class="mtr"><div id="bellyFill"></div></div>
     </div>
   </div>
@@ -494,7 +516,7 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
 <div id="howPanel" class="veil dim" hidden>
   <div class="card panel" role="dialog" aria-labelledby="howH">
     <h2 id="howH">How to play</h2>
-    <div class="goalHead">Your job: keep the dodo alive.</div>
+    <div class="goalHead">Your job: keep the last two dodos alive.</div>
     <ul class="goals" id="howGoals"></ul>
     <h3>Controls</h3>
     <div class="ctrls">
@@ -506,9 +528,11 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     </div>
     <h3>Survival tips</h3>
     <ul class="tips">
+      <li>The T-rex needs to <b>see</b> him. Under a cluster of trees (or HUSH under one) he's invisible. Running gives him away.</li>
+      <li>The nest grove is <b>safe</b>. Nothing big ever comes in.</li>
+      <li>Doda follows <b>anything in his beak</b>. That's how you get her home.</li>
+      <li>If it goes for Doda, <b>HONK</b> near it. He's the decoy now.</li>
       <li>When it lunges, <b>go sideways</b>. It turns like a bus.</li>
-      <li>His farts leave a <b>scent trail</b>. Don't lead it home.</li>
-      <li>Sleeping cats wake up to <b>noise</b>: farts, sneezes, honks, faceplants.</li>
     </ul>
     <button class="big" data-back>Got it</button>
   </div>
@@ -546,6 +570,15 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     <div class="cardTxt" id="dcTxt"></div>
     <div class="nextBox" id="dcNext"></div>
     <div class="btnRow" style="justify-content:center"><button class="big" id="nextBtn">Wake him up</button></div>
+  </div>
+</div>
+
+<div id="winCard" class="veil" hidden>
+  <div class="card">
+    <div class="cardKick">THE EGG HATCHED!</div>
+    <div class="cardTxt" id="winTxt"></div>
+    <div class="nextBox" id="winStats"></div>
+    <div class="btnRow" style="justify-content:center"><button class="big" id="winAgain">Play again</button><button class="ghost" id="winMenu">Main menu</button></div>
   </div>
 </div>
 
@@ -644,14 +677,14 @@ stageEl.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, .1, 1400);
 camera.position.set(0, 40, 80);
-scene.fog = new THREE.Fog(0xbfe0ee, 70, 280);
+scene.fog = new THREE.Fog(0xbfe0ee, 80, 330);
 
 const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x6b5a3a, .72); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff2dc, 1.0);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 220;
-sun.shadow.camera.left = -46; sun.shadow.camera.right = 46; sun.shadow.camera.top = 46; sun.shadow.camera.bottom = -46;
+sun.shadow.camera.left = -38; sun.shadow.camera.right = 38; sun.shadow.camera.top = 38; sun.shadow.camera.bottom = -38;
 sun.shadow.bias = -0.0008;
 scene.add(sun); scene.add(sun.target);
 const glow = new THREE.PointLight(0xffd9a0, 0, 16, 1.6); scene.add(glow); // dodo's night glow
@@ -718,6 +751,7 @@ function blob(detail, amp, seed) {
   g.computeVertexNormals(); return g;
 }
 for (let i = 0; i < 6; i++) BLOBS.push(blob(1, .2, i * 3.1 + 1));
+const SBLOBS = []; for (let i = 0; i < 4; i++) SBLOBS.push(blob(2, .13, i * 4.3 + 2));   // rounder, for foliage
 const ROCKS = [0, 1, 2, 3].map(i => blob(1, .32, i * 5.7 + 11));
 /* a drooping, serrated palm frond pointing along +z, two-sided */
 const FROND = (() => {
@@ -740,7 +774,10 @@ class Builder {
     const m = new THREE.Matrix4().compose(new V3(p[0], p[1], p[2]), new THREE.Quaternion().setFromEuler(new THREE.Euler(r ? r[0] : 0, r ? r[1] : 0, r ? r[2] : 0, 'YXZ')), sc);
     g.applyMatrix4(m);
     const n = g.attributes.position.count, c = new Float32Array(n * 3), col = new THREE.Color(color);
-    const o = this.opt || {}, P = g.attributes.position.array, N = g.attributes.normal.array, moss = o.moss ? new THREE.Color(o.moss) : null, top = o.top ? new THREE.Color(o.top) : null;
+    const o = this.opt || {}, P = g.attributes.position.array, N = g.attributes.normal.array;
+    // cn: [cx,cy,cz,k] bends normals to point away from a centre, so a cluster of blobs shades like ONE soft round mass
+    if (o.cn) { const [cx, cy, cz, k] = o.cn; for (let i = 0; i < n; i++) { let dx = P[i * 3] - cx, dy = (P[i * 3 + 1] - cy) * 1.25, dz = P[i * 3 + 2] - cz; const l = Math.hypot(dx, dy, dz) || 1; let nx = lerp(N[i * 3], dx / l, k), ny = lerp(N[i * 3 + 1], dy / l, k), nz = lerp(N[i * 3 + 2], dz / l, k); const m = Math.hypot(nx, ny, nz) || 1; N[i * 3] = nx / m; N[i * 3 + 1] = ny / m; N[i * 3 + 2] = nz / m; } }
+    const moss = o.moss ? new THREE.Color(o.moss) : null, top = o.top ? new THREE.Color(o.top) : null;
     for (let i = 0; i < n; i++) {
       let r = col.r, gg = col.g, b = col.b;
       if (o.gy) { const t = clamp((P[i * 3 + 1] - o.gy[0]) / (o.gy[1] - o.gy[0]), 0, 1); if (top) { r = lerp(r, top.r, t); gg = lerp(gg, top.g, t); b = lerp(b, top.b, t); } else { const k = lerp(o.gy[2], o.gy[3], t); r *= k; gg *= k; b *= k; } }
@@ -764,15 +801,15 @@ class Builder {
 }
 
 /* ---------------- the island ---------------- */
-const ISLAND_R = 62;
+const ISLAND_R = 82, ISL = ISLAND_R / 62;   // v0.12: island ~1.75x the area
 function groundH(x, z) {
   const r = Math.sqrt(x * x + z * z);
   const a = Math.atan2(z, x);
   const coast = ISLAND_R + (fbm(Math.cos(a) * 1.6 + 7.3, Math.sin(a) * 1.6 + 2.1) - .5) * 20;
   const land = smooth(coast + 4, coast - 12, r);
-  const hills = fbm(x * .03 + 3.7, z * .03 + 9.1);
+  const hills = fbm(x * .026 + 3.7, z * .026 + 9.1);
   let h = land * (.55 + hills * hills * 6.5) + (1 - land) * -3.6;
-  h += land * 1.1 * Math.exp(-(x * x + z * z) / 260);
+  h += land * 1.1 * Math.exp(-(x * x + z * z) / 420);
   return h;
 }
 const WATER_Y = 0;
@@ -783,7 +820,7 @@ const obstacles = [];   // trees & rocks: {x,z,r,type,alive,obj}
 const meadows = [], groves = [];
 function spot(test, tries) {
   for (let i = 0; i < (tries || 400); i++) {
-    const a = SR() * TAU, d = Math.sqrt(SR()) * 68;
+    const a = SR() * TAU, d = Math.sqrt(SR()) * 68 * ISL;
     const x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
     if (test(x, z, h)) return { x, z, h };
   }
@@ -792,19 +829,19 @@ function spot(test, tries) {
 function clearOf(list, x, z, r) { for (const o of list) if (Math.hypot(o.x - x, o.z - z) < r + (o.r || 0)) return false; return true; }
 const nearNest = (x, z, r) => Math.hypot(x - NEST.x, z - NEST.z) < r;
 
-for (let i = 0; i < 5; i++) {
-  const s = spot((x, z, h) => h > 1.1 && h < 3.6 && !nearNest(x, z, 16) && clearOf(meadows, x, z, 17));
+for (let i = 0; i < 7; i++) {
+  const s = spot((x, z, h) => h > 1.1 && h < 3.6 && !nearNest(x, z, 22) && clearOf(meadows, x, z, 17));
   if (s) meadows.push({ x: s.x, z: s.z, r: sr(6.5, 8.5) });
 }
-for (let i = 0; i < 6; i++) {
-  const s = spot((x, z, h) => h > 1.2 && !nearNest(x, z, 15) && clearOf(groves, x, z, 16) && clearOf(meadows, x, z, 6));
+for (let i = 0; i < 13; i++) {
+  const s = spot((x, z, h) => h > 1.2 && !nearNest(x, z, 24) && clearOf(groves, x, z, 17) && clearOf(meadows, x, z, 8));
   if (s) groves.push({ x: s.x, z: s.z, r: 0 });
 }
 
 /* ---------------- terrain mesh ---------------- */
 const TERRAIN = {};
 (function buildTerrain() {
-  const TS = 200, SEG = 170;
+  const TS = 270, SEG = 215;
   let g = new THREE.PlaneGeometry(TS, TS, SEG, SEG); g.rotateX(-Math.PI / 2);
   const p = g.attributes.position;
   for (let i = 0; i < p.count; i++) p.setY(i, groundH(p.getX(i), p.getZ(i)));
@@ -839,10 +876,10 @@ const TERRAIN = {};
 const waterU = {
   uTime: { value: 0 }, uDepth: { value: null },
   uDeep: { value: new THREE.Color(0x1f8fb0) }, uShallow: { value: new THREE.Color(0x63e0d6) }, uFoam: { value: new THREE.Color(0xffffff) },
-  uFog: { value: new THREE.Color(0xbfe0ee) }, uFogNear: { value: 70 }, uFogFar: { value: 280 }, uSun: { value: new THREE.Color(0xffffff) }
+  uFog: { value: new THREE.Color(0xbfe0ee) }, uFogNear: { value: 80 }, uFogFar: { value: 330 }, uSun: { value: new THREE.Color(0xffffff) }
 };
 (function buildWater() {
-  const N = 128, S = 200, data = new Uint8Array(N * N * 4);
+  const N = 160, S = 270, data = new Uint8Array(N * N * 4);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const x = (i / (N - 1) - .5) * S, z = (j / (N - 1) - .5) * S;
     const v = clamp((groundH(x, z) + 10) / 20, 0, 1) * 255;
@@ -860,7 +897,7 @@ const waterU = {
     fragmentShader: `uniform float uTime; uniform sampler2D uDepth; uniform vec3 uDeep,uShallow,uFoam,uFog,uSun; uniform float uFogNear,uFogFar;
       varying vec3 vW; varying float vD;
       void main(){
-        vec2 uv = vW.xz/200.0 + 0.5; float h = -8.0;
+        vec2 uv = vW.xz/270.0 + 0.5; float h = -8.0;
         if(uv.x>0.0 && uv.x<1.0 && uv.y>0.0 && uv.y<1.0) h = texture2D(uDepth,uv).r*20.0-10.0;
         float depth = max(0.0,-h);
         float sh = smoothstep(0.0,3.8,depth);
@@ -899,18 +936,86 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), new THREE.Shad
 }));
 sky.renderOrder = -10; scene.add(sky);
 
+const _gB = new THREE.Color();
+/* ---------------- the volcano (v0.12) ----------------
+   A lathe-turned cone with real ridges and gullies, jungle at the foot, bare rock higher up, a dark crater rim.
+   Lava: a glowing crater, plus rivers that actually flow down the gullies (scrolling, crusting shader). */
+const VOLC = { x: -95, z: -230, top: 0 };
+const lavaU = { uTime: { value: 0 }, uFog: { value: new THREE.Color(0xbfe0ee) }, uFogNear: { value: 80 }, uFogFar: { value: 330 }, uNight: { value: 0 } };
+function buildVolcano() {
+  const H = 92, RIM = 15, BASE = 120;
+  const prof = [];
+  for (let i = 0; i <= 26; i++) { const t = i / 26, y = Math.pow(t, 1.0) * H, r = RIM + (BASE - RIM) * Math.pow(1 - t, 1.9); prof.push(new THREE.Vector2(r, y - 6)); }
+  prof.push(new THREE.Vector2(RIM - 2.5, H - 4.5)); prof.push(new THREE.Vector2(RIM - 7, H - 9)); prof.push(new THREE.Vector2(0.1, H - 10));
+  let g = new THREE.LatheGeometry(prof, 72);
+  const p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color();
+  const GULLY = [0.4, 1.35, 2.6, 4.1, 5.3];
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x), rr = Math.hypot(x, z), t = clamp((y + 6) / H, 0, 1);
+    // ridges + gullies, strongest mid-slope; lumpy noise everywhere
+    let k = 1 + Math.sin(a * 11 + Math.sin(a * 3) * 1.5) * .045 * Math.sin(t * Math.PI) + (fbm(a * 3 + 9, t * 5) - .5) * .12;
+    for (const ga of GULLY) { const d = Math.abs(angDiff(a, ga)); k -= Math.exp(-d * d * 260) * .07 * smooth(.95, .3, t); }
+    if (rr > 1) { p.setX(i, x * k); p.setZ(i, z * k); }
+    const n = fbm(x * .05 + 3, z * .05 + 7);
+    if (t < .08) c.setHex(0xd9c48e).lerp(_gB.setHex(0x3f7434), smooth(.03, .08, t));
+    else if (t < .22) c.setHex(0x2f6a30).lerp(_gB.setHex(0x427c38), n);
+    else if (t < .36) c.setHex(0x3a7234).lerp(_gB.setHex(0x7d6a58), smooth(.22, .36, t));
+    else c.setHex(0x7d6a58).lerp(_gB.setHex(0x3e3330), smooth(.45, .92, t)).offsetHSL(0, 0, (n - .5) * .08);
+    if (y > H - 7) c.setHex(0x2b2422);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g = g.toNonIndexed(); g.computeVertexNormals();
+  const vm = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  vm.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <fog_fragment>', '#ifdef USE_FOG\n float fogFactor = smoothstep( fogNear, fogFar, fogDepth );\n gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor * 0.5 );\n#endif'); };
+  const m = new THREE.Mesh(g, vm);
+  m.position.set(VOLC.x, -2, VOLC.z); scene.add(m);
+  VOLC.top = H - 6;
+  const lavaMat = new THREE.ShaderMaterial({
+    uniforms: lavaU, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    vertexShader: `varying vec2 vUv; varying float vD; void main(){ vUv = uv; vec4 mv = modelViewMatrix*vec4(position,1.0); vD = -mv.z; gl_Position = projectionMatrix*mv; }`,
+    fragmentShader: `uniform float uTime, uFogNear, uFogFar, uNight; uniform vec3 uFog; varying vec2 vUv; varying float vD;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+      float n2(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
+      void main(){
+        vec2 p = vec2(vUv.x*3.0, vUv.y*14.0 - uTime*0.9);
+        float flow = n2(p) * .6 + n2(p*2.3 + 4.0) * .4;
+        float crust = smoothstep(.55, .8, n2(vec2(vUv.x*5.0, vUv.y*24.0 - uTime*0.55)));
+        float edge = 1.0 - smoothstep(.25, .5, abs(vUv.x - .5));
+        float cool = smoothstep(.35, 1.0, vUv.y);                  // cools as it runs downhill
+        vec3 hot = mix(vec3(1.0,.93,.45), vec3(1.0,.45,.08), flow);
+        vec3 col = mix(hot, vec3(.75,.12,.03), cool*.8);
+        col = mix(col, vec3(.16,.07,.05), crust * (.35 + cool*.55));
+        col *= 1.0 + uNight*.35;
+        float a = edge * (1.0 - smoothstep(.85, 1.0, vUv.y));
+        float f = smoothstep(uFogNear, uFogFar, vD) * .5 * (1.0 - uNight*.55);
+        gl_FragColor = vec4(mix(col, uFog, f*.85), a);
+      }`
+  });
+  // rivers: ribbons that follow the gullies down from the rim
+  const surf = (ang, y) => { const t = clamp((y + 6) / H, 0, 1), r = (RIM + (BASE - RIM) * Math.pow(1 - t, 1.9)) * (1 - .07 * smooth(.95, .3, t)) + 2.2; return [VOLC.x + Math.cos(ang) * r, y - 2 + .9, VOLC.z + Math.sin(ang) * r]; };
+  for (const [ga, len] of [[0.4, .62], [1.35, .48], [2.6, .58], [4.1, .42], [5.3, .3]]) {
+    const pos = [], uvs = [], idx = [], N = 40;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, y = (H - 6.5) - t * len * H, ang = ga + Math.sin(t * 7 + ga) * .025, w = (2.6 + t * 5.5) / ((RIM + (BASE - RIM) * Math.pow(1 - clamp((y + 6) / H, 0, 1), 1.9)));
+      const L = surf(ang - w, y), R = surf(ang + w, y);
+      pos.push(...L, ...R); uvs.push(0, t, 1, t);
+      if (i < N) { const b = i * 2; idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2); }
+    }
+    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); rg.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); rg.setIndex(idx);
+    const rm = new THREE.Mesh(rg, lavaMat); rm.renderOrder = 2; scene.add(rm);
+  }
+  // crater: a glowing pool and a soft halo you can see from the island, brighter at night
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(RIM - 3, 32), lavaMat); pool.rotation.x = -Math.PI / 2; pool.position.set(VOLC.x, H - 8.6, VOLC.z); scene.add(pool);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(RIM * 1.5, 20, 12), new THREE.ShaderMaterial({ uniforms: lavaU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide,
+    vertexShader: `varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix*normal); vec4 mv = modelViewMatrix*vec4(position,1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+    fragmentShader: `uniform float uNight, uTime; varying vec3 vN; varying vec3 vV; void main(){ float r = pow(1.0-abs(dot(vN,vV)), 2.0); gl_FragColor = vec4(1.0,.42,.12, (1.0-r)*(.10+uNight*.32)*(.85+.15*sin(uTime*2.0))); }` }));
+  halo.position.set(VOLC.x, H - 4, VOLC.z); halo.scale.y = .55; scene.add(halo);
+}
 /* ---------------- backdrop: volcano, islets, clouds ---------------- */
 const CLOUDS = [];
 (function backdrop() {
-  const b = new Builder();
-  b.with({ gy: [-4, 70, .7, 1.12], jit: .12 });
-  b.add(new THREE.ConeGeometry(70, 70, 12, 4, true), 0x7d6659, [0, 30, 0], 1);
-  b.with({ gy: [-4, 30, .8, 1.1], jit: .15 }).add(new THREE.ConeGeometry(30, 30, 10, 3), 0x5f8a45, [-46, 8, 18], [1, .55, 1]);
-  b.with(null).add(new THREE.CylinderGeometry(9, 13.5, 6, 12, 1, true), 0x3c2e2a, [0, 66, 0], 1);
-  b.add(new THREE.CylinderGeometry(8.6, 8.6, .8, 12), 0xff7a2a, [0, 68.5, 0], 1);
-  for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + .3; b.add(new THREE.ConeGeometry(2.2, 22, 5), 0xe0602a, [Math.cos(a) * 9, 58, Math.sin(a) * 9], [1, 1, .6], [Math.PI + .25 * Math.sin(a), a, .25 * Math.cos(a)]); }
-  const v = new THREE.Mesh(b.bake(), new THREE.MeshLambertMaterial({ vertexColors: true }));
-  v.position.set(-70, -4, -190); scene.add(v);
+  buildVolcano();
   const islet = (x, z, s) => { const g = new Builder(); g.with({ gy: [-6, 6, .8, 1.15], jit: .15 }).add(BLOBS[0], 0x6fa652, [0, -4, 0], [s, s * .32, s]); g.with(null).add(GEO.sphLo, 0xe8d49a, [0, -5.2, 0], [s * 1.12, s * .2, s * 1.12]);
     for (let k = 0; k < 4; k++) g.with({ gy: [0, 12, .8, 1.15] }).add(BLOBS[k], 0x4f8d3c, [sr(-s * .5, s * .5), s * .2, sr(-s * .4, s * .4)], [s * .18, s * .22, s * .18]);
     const m = new THREE.Mesh(g.bake(), new THREE.MeshLambertMaterial({ vertexColors: true })); m.position.set(x, 0, z); scene.add(m); };
@@ -928,10 +1033,25 @@ const CLOUDS = [];
 /* ---------------- props ---------------- */
 const trees = [], bushes = [], berryBushes = [], crystals = [], rocks = [], butterflies = [];
 const SWAY = [];
-const LEAF_PAL = [[0x2f6a2c, 0x8fcb5a], [0x2c6236, 0x74b85c], [0x3d7a28, 0xa8c84a], [0x2f6b3e, 0x6dbf7a]];
-function addTree(x, z, kind) {
+const LEAF_PAL = [[0x2f6a2c, 0x8fcb5a], [0x2c6236, 0x74b85c], [0x3d7a28, 0xa8c84a], [0x2f6b3e, 0x6dbf7a], [0x245a34, 0x5fae6a]];
+/* v0.12 trees. Foliage = overlapping lumpy blobs whose normals all point out from the canopy centre,
+   so each crown reads as one soft, round, cel-shaded mass instead of a pile of facets.
+   cover = radius of canopy shade: standing under it (quietly) hides him from the T-rex. */
+const SANCT_R = 11;   // the nest grove: no T-rex ever comes in here
+function canopy(b, cx, cy, cz, R, pal, n, smoothK, geoSet) {
+  b.with({ gy: [cy - R * 1.1, cy + R * 1.1], top: pal[1], jit: .08, cn: [cx, cy - R * .2, cz, smoothK] });
+  const G = geoSet || BLOBS;
+  b.add(G[(SR() * G.length) | 0], pal[0], [cx, cy + R * .15, cz], [R * .95, R * .8, R * .95], [0, sr(0, 3), 0]);
+  for (let k = 0; k < n; k++) {
+    const a = k / n * TAU + sr(-.3, .3), up = sr(-.25, .45), d = R * sr(.55, .78);
+    b.add(G[k % G.length], pal[0], [cx + Math.cos(a) * d, cy + up * R, cz + Math.sin(a) * d], R * sr(.48, .66), [sr(0, 3), sr(0, 3), 0]);
+  }
+  b.add(G[(SR() * G.length) | 0], pal[0], [cx + sr(-.2, .2) * R, cy + R * .62, cz + sr(-.2, .2) * R], R * sr(.5, .62));
+}
+function addTree(x, z, kind, opt) {
+  opt = opt || {};
   const h = groundH(x, z), b = new Builder();
-  let r;
+  let r, cover = 0;
   if (kind === 'palm') {
     const lean = sr(0, TAU), lx = Math.cos(lean), lz = Math.sin(lean), segs = 8;
     let top = [0, 0, 0];
@@ -941,54 +1061,93 @@ function addTree(x, z, kind) {
       top = [lx * off, y, lz * off];
       const rr = .23 - i * .013;
       b.add(GEO.cyl, i % 2 ? 0xa07c50 : 0x8a6a42, [lx * off, y + .42, lz * off], [rr, .9, rr], [lz * i * .035, 0, -lx * i * .035]);
-      b.add(GEO.cyl, 0x6e5232, [lx * off, y + .02, lz * off], [rr * 1.18, .12, rr * 1.18]);   // ring scars
+      b.add(GEO.cyl, 0x6e5232, [lx * off, y + .02, lz * off], [rr * 1.18, .12, rr * 1.18]);
     }
     const ty = top[1] + .75;
     for (let k = 0; k < 4; k++) b.add(GEO.sphLo, 0x5a3c22, [top[0] + Math.cos(k * 1.7) * .22, ty - .38, top[2] + Math.sin(k * 1.7) * .22], .2);
     const pal = [0x3d8a32, 0x56a83e, 0x2f7a2a];
     b.with({ gy: [ty - 1.6, ty + .4, .7, 1.15], jit: .08 });
-    for (let k = 0; k < 11; k++) {
-      const a = k / 11 * TAU + sr(-.15, .15), tilt = sr(-.25, .2) + (k % 2 ? .15 : 0);
-      b.add(FROND, pal[k % 3], [top[0], ty, top[2]], sr(.9, 1.15), [tilt, a, 0]);
-    }
+    for (let k = 0; k < 11; k++) { const a = k / 11 * TAU + sr(-.15, .15), tilt = sr(-.25, .2) + (k % 2 ? .15 : 0); b.add(FROND, pal[k % 3], [top[0], ty, top[2]], sr(.9, 1.15), [tilt, a, 0]); }
     for (let k = 0; k < 3; k++) b.add(FROND, 0x6fbf4a, [top[0], ty + .1, top[2]], .55, [-.9, k * 2.1, 0]);
-    r = .45;
+    r = .45; cover = 1.2;
+  } else if (kind === 'fern') {
+    // prehistoric tree fern: shaggy trunk, a big arching crown of fronds, a couple of curled fiddleheads
+    const th = sr(2.6, 4.4), bend = sr(-.12, .12), seg = 6;
+    b.with({ sky: [.72, 1.08], jit: .14 });
+    for (let i = 0; i < seg; i++) { const y = i * th / seg, rr = .34 - i * .022; b.add(GEO.cyl, i % 2 ? 0x5b4130 : 0x4a3426, [bend * y, y + th / seg / 2, 0], [rr, th / seg + .04, rr], [0, i, bend]); const a = sr(0, TAU); b.add(GEO.cone, 0x3e2c20, [bend * y + Math.cos(a) * rr, y + .2, Math.sin(a) * rr], [.08, .32, .08], [Math.PI - .5, a, 0]); }
+    const ty = th + .05, tx = bend * th, pal = [0x3f8f3a, 0x4fa245, 0x2f7a33];
+    b.with({ gy: [ty - 1.8, ty + .5, .68, 1.18], jit: .06 });
+    for (let k = 0; k < 11; k++) { const a = k / 11 * TAU + sr(-.1, .1); b.add(FROND, pal[k % 3], [tx, ty, 0], sr(1.05, 1.35), [sr(-.35, .05), a, 0]); }
+    for (let k = 0; k < 3; k++) { const a = k * 2.1 + .4; b.add(GEO.sphLo, 0x7fb84a, [tx + Math.cos(a) * .22, ty + .45, Math.sin(a) * .22], [.12, .12, .12]); b.add(GEO.cyl, 0x6aa84a, [tx + Math.cos(a) * .18, ty + .22, Math.sin(a) * .18], [.04, .45, .04]); }
+    r = .45; cover = 2.2;
+  } else if (kind === 'giant') {
+    // giant monkey-puzzle tree: taller than a T-rex, tiers of branches with puffy pads, buttress roots
+    const th = sr(17, 21), pal = [0x1f5a3a, 0x4f9a5a];
+    b.with({ sky: [.72, 1.08], jit: .1 });
+    for (let i = 0; i < 6; i++) { const y = i * th / 6, rr = 1.15 - i * .11; b.add(GEO.cyl, i % 2 ? 0x7a5a3e : 0x6c4e35, [0, y + th / 12, 0], [rr, th / 6 + .1, rr], [0, i * .7, 0]); }
+    for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + sr(-.2, .2); b.add(GEO.cone, 0x6a4c32, [Math.cos(a) * 1.15, .9, Math.sin(a) * 1.15], [.55, 2.4, .3], [0, -a, .55], ); }
+    const tiers = 4;
+    for (let t = 0; t < tiers; t++) {
+      const y = th * (.5 + t * .15), n = 6 - t, L = 5.2 - t * 1.05;
+      for (let k = 0; k < n; k++) {
+        const a = k / n * TAU + t * .7 + sr(-.2, .2), ex = Math.cos(a) * L, ez = Math.sin(a) * L, ey = y + .8 + L * .12;
+        b.with({ sky: [.72, 1.08], jit: .1 }); b.add(GEO.cyl, 0x6c4e35, [ex / 2, y + .5 + L * .06, ez / 2], [.18, L, .18], [0, -a, Math.PI / 2 - .2]);
+        canopy(b, ex, ey, ez, sr(1.5, 1.9) - t * .12, pal, 2, .85);
+      }
+    }
+    canopy(b, 0, th + 1.1, 0, 2.3, pal, 4, .85);
+    r = 1.45; cover = 6.5;
   } else {
-    const th = sr(2.1, 2.9), pal = LEAF_PAL[(SR() * LEAF_PAL.length) | 0], bend = sr(-.15, .15);
+    // broadleaf: a curvy trunk and a big soft round crown
+    const big = !!opt.big, th = big ? sr(3.6, 4.6) : sr(2.3, 3.2), pal = LEAF_PAL[(SR() * LEAF_PAL.length) | 0], bend = sr(-.18, .18), R = big ? sr(2.4, 2.9) : sr(1.85, 2.3);
     b.with({ sky: [.72, 1.1], jit: .12 });
-    b.add(new THREE.CylinderGeometry(.24, .4, th, 8), 0x76563a, [0, th / 2, 0], 1, [0, 0, bend]);
-    b.add(new THREE.ConeGeometry(.75, .7, 8), 0x6a4c32, [0, .3, 0], 1);                       // root flare
-    for (let k = 0; k < 2; k++) { const a = sr(0, TAU); b.add(new THREE.CylinderGeometry(.06, .13, 1.2, 6), 0x76563a, [Math.cos(a) * .45, th * .72, Math.sin(a) * .45], 1, [0, -a, .9]); }
-    const cy = th + 1.1, n = 5 + ((SR() * 3) | 0);
-    b.with({ gy: [cy - 1.8, cy + 2.2], top: pal[1], jit: .1 });
-    for (let k = 0; k < n; k++) { const a = k / n * TAU + sr(-.3, .3), d = sr(.7, 1.3); b.add(BLOBS[k % 6], pal[0], [Math.cos(a) * d, cy + sr(-.3, .5), Math.sin(a) * d], sr(1.05, 1.45)); }
-    b.add(BLOBS[(SR() * 6) | 0], pal[0], [sr(-.3, .3), cy + 1.3, sr(-.3, .3)], sr(1.2, 1.5));
-    if (SR() < .22) { b.with(null); for (let k = 0; k < 14; k++) { const a = sr(0, TAU), e = sr(-.2, 1.2); b.add(GEO.ico, SR() < .5 ? 0xffb3c8 : 0xfff0f4, [Math.cos(a) * Math.cos(e) * 2.1, cy + .5 + Math.sin(e) * 1.6, Math.sin(a) * Math.cos(e) * 2.1], .12); } }
-    r = .55;
+    b.add(new THREE.CylinderGeometry(.26, .42, th, 9), 0x76563a, [Math.sin(bend) * th * -.3, th / 2, 0], 1, [0, 0, bend]);
+    b.add(new THREE.ConeGeometry(.8, .8, 9), 0x6a4c32, [0, .32, 0], 1);
+    for (let k = 0; k < 3; k++) { const a = k / 3 * TAU + sr(-.4, .4); b.add(new THREE.CylinderGeometry(.07, .15, 1.4, 6), 0x76563a, [Math.cos(a) * .5, th * .78, Math.sin(a) * .5], 1, [0, -a, .85]); }
+    const cx = -Math.sin(bend) * th * .55, cy = th + R * .55;
+    canopy(b, cx, cy, 0, R, pal, 5 + ((SR() * 2) | 0), .8);
+    if (SR() < .2) { b.with(null); for (let k = 0; k < 16; k++) { const a = sr(0, TAU), e = sr(-.1, 1.2); b.add(GEO.ico, SR() < .5 ? 0xffb3c8 : 0xfff0f4, [cx + Math.cos(a) * Math.cos(e) * R * 1.02, cy + Math.sin(e) * R * .85, Math.sin(a) * Math.cos(e) * R * 1.02], .13); } }
+    r = .55; cover = R * 1.05;
   }
   const mat = toonVC();
   const mesh = new THREE.Mesh(b.bake(), mat); mesh.castShadow = true; mesh.receiveShadow = true;
-  const grp = new THREE.Group(); grp.position.set(x, h - .05, z); grp.add(mesh); scene.add(grp);
-  const t = { x, z, r, type: 'tree', kind, alive: true, grp, mat, ph: sr(0, TAU), shake: 0, fall: null, fade: 1 };
+  const yaw = sr(0, TAU), grp = new THREE.Group(); grp.position.set(x, h - .05, z); grp.rotation.y = yaw; grp.add(mesh); scene.add(grp);
+  const t = { x, z, r, cover, yaw, type: 'tree', kind, alive: true, grp, mat, ph: sr(0, TAU), shake: 0, fall: null, fade: 1, giant: kind === 'giant', home: !!opt.home };
   trees.push(t); obstacles.push(t); SWAY.push(t); return t;
 }
+/* the nest grove: a ring of big trees round a sunny clearing, with three ways in */
+(function nestGrove() {
+  const gaps = [.6, 2.75, 4.9];
+  const inGap = a => gaps.some(g => Math.abs(angDiff(a, g)) < .32);
+  addTree(NEST.x - 8.5, NEST.z - 6.5, 'giant', { home: true });
+  addTree(NEST.x + 9.5, NEST.z + 4.5, 'giant', { home: true });
+  let placed = 0;
+  for (let i = 0; i < 400 && placed < 30; i++) {
+    const a = sr(0, TAU), d = sr(5, 11.5), x = NEST.x + Math.cos(a) * d, z = NEST.z + Math.sin(a) * d;
+    if (inGap(a) || groundH(x, z) < 1 || !clearOf(trees, x, z, 2.2)) continue;
+    addTree(x, z, SR() < .3 ? 'fern' : 'broad', { home: true, big: d > 8 && SR() < .5, smooth: true }); placed++;
+  }
+})();
 for (const gr of groves) {
   let placed = 0;
-  for (let i = 0; i < 60 && placed < 9; i++) {
-    const a = sr(0, TAU), d = sr(0, 6.5), x = gr.x + Math.cos(a) * d, z = gr.z + Math.sin(a) * d;
-    if (groundH(x, z) < 1.0) continue;
-    if (!clearOf(trees, x, z, 2.55)) continue;
-    addTree(x, z, 'broad'); placed++;
+  const R = sr(7, 10);
+  for (let i = 0; i < 120 && placed < 12; i++) {
+    const a = sr(0, TAU), d = Math.sqrt(SR()) * R, x = gr.x + Math.cos(a) * d, z = gr.z + Math.sin(a) * d;
+    if (groundH(x, z) < 1.0 || !clearOf(trees, x, z, 2.3)) continue;
+    addTree(x, z, SR() < .3 ? 'fern' : 'broad', { big: SR() < .2 }); placed++;
   }
+  gr.r = R;
 }
-for (let i = 0; i < 26; i++) { const s = spot((x, z, h) => h > .35 && h < 1.4 && clearOf(trees, x, z, 3.2) && !nearNest(x, z, 8)); if (s) addTree(s.x, s.z, 'palm'); }
-for (let i = 0; i < 14; i++) { const s = spot((x, z, h) => h > 1.3 && clearOf(trees, x, z, 4.5) && !nearNest(x, z, 9) && clearOf(meadows, x, z, 1)); if (s) addTree(s.x, s.z, 'broad'); }
+/* giants: taller than a T-rex, the island's landmarks */
+for (let i = 0; i < 5; i++) { const s = spot((x, z, h) => h > 1.3 && clearOf(trees, x, z, 7) && !nearNest(x, z, 26) && clearOf(meadows, x, z, 3) && clearOf(trees.filter(t => t.giant), x, z, 36)); if (s) addTree(s.x, s.z, 'giant'); }
+for (let i = 0; i < 34; i++) { const s = spot((x, z, h) => h > .35 && h < 1.4 && clearOf(trees, x, z, 3.2) && !nearNest(x, z, 14)); if (s) addTree(s.x, s.z, 'palm'); }
+for (let i = 0; i < 30; i++) { const s = spot((x, z, h) => h > 1.3 && clearOf(trees, x, z, 4.5) && !nearNest(x, z, 14) && clearOf(meadows, x, z, 1)); if (s) addTree(s.x, s.z, SR() < .3 ? 'fern' : 'broad'); }
 
 /* rocks — merged into one mesh, still obstacles */
 (function buildRocks() {
   const b = new Builder().with({ sky: [.72, 1.12], moss: 0x6f9a3e, jit: .14 });
-  for (let i = 0; i < 34; i++) {
-    const s = spot((x, z, h) => h > .5 && clearOf(obstacles, x, z, 2.2) && !nearNest(x, z, 7));
+  for (let i = 0; i < 46; i++) {
+    const s = spot((x, z, h) => h > .5 && clearOf(obstacles, x, z, 2.2) && !nearNest(x, z, SANCT_R));
     if (!s) continue;
     const r = sr(.55, 1.5), col = [0x9a948a, 0xb3ab9a, 0x8f8a84][(SR() * 3) | 0];
     b.add(ROCKS[(SR() * 4) | 0], col, [s.x, s.h + r * .3, s.z], [r, r * sr(.6, .85), r * sr(.8, 1.1)], [0, sr(0, 3), 0]);
@@ -1001,12 +1160,12 @@ for (let i = 0; i < 14; i++) { const s = spot((x, z, h) => h > 1.3 && clearOf(tr
 })();
 
 /* hiding bushes: big, dense, a little blue-green (so you can tell them from food) */
-for (let i = 0; i < 34; i++) {
+for (let i = 0; i < 52; i++) {
   const s = spot((x, z, h) => h > .6 && clearOf(obstacles, x, z, 2.4) && clearOf(bushes, x, z, 3.2) && !nearNest(x, z, 5));
   if (!s) continue;
-  const b = new Builder().with({ gy: [-.1, 2.1], top: 0x7fc46a, jit: .12 });
-  for (let k = 0; k < 6; k++) { const a = k / 6 * TAU + sr(-.3, .3); b.add(BLOBS[k % 6], 0x245f36, [Math.cos(a) * sr(.55, .95), sr(.55, .85), Math.sin(a) * sr(.55, .95)], [sr(.78, 1.0), sr(.7, .9), sr(.78, 1.0)]); }
-  b.add(BLOBS[(SR() * 6) | 0], 0x2a6a3a, [0, 1.15, 0], [.95, .85, .95]);
+  const b = new Builder().with({ gy: [-.1, 2.1], top: 0x7fc46a, jit: .1, cn: [0, .4, 0, .8] });
+  for (let k = 0; k < 6; k++) { const a = k / 6 * TAU + sr(-.3, .3); b.add(BLOBS[k % 6], 0x245f36, [Math.cos(a) * sr(.6, .95), sr(.5, .8), Math.sin(a) * sr(.6, .95)], [sr(.72, .92), sr(.62, .82), sr(.72, .92)], [0, sr(0, 3), 0]); }
+  b.add(BLOBS[(SR() * 6) | 0], 0x2a6a3a, [0, 1.12, 0], [.95, .82, .95]);
   b.with({ sky: [.8, 1.1] }); for (let k = 0; k < 5; k++) { const a = sr(0, TAU); b.add(GEO.cone, 0x5aa85a, [Math.cos(a) * .9, sr(1.3, 1.7), Math.sin(a) * .9], [.06, .35, .06], [sr(-.4, .4), 0, sr(-.4, .4)]); }
   const mat = toonVC(); const mesh = new THREE.Mesh(b.bake(), mat); mesh.castShadow = true; mesh.receiveShadow = true;
   mesh.position.set(s.x, s.h - .12, s.z); mesh.rotation.y = sr(0, TAU); scene.add(mesh);
@@ -1014,10 +1173,10 @@ for (let i = 0; i < 34; i++) {
 }
 /* berry bushes (food is never where it's safe): small, bright, glossy berries */
 const MAT_BERRY = toon(0xe5303e);
-for (let i = 0; i < 30; i++) {
-  const s = spot((x, z, h) => h > .5 && clearOf(obstacles, x, z, 2) && clearOf(bushes, x, z, 2.6) && clearOf(berryBushes, x, z, 4) && !nearNest(x, z, 11));
+for (let i = 0; i < 40; i++) {
+  const s = spot((x, z, h) => h > .5 && clearOf(obstacles, x, z, 2) && clearOf(bushes, x, z, 2.6) && clearOf(berryBushes, x, z, 4) && !nearNest(x, z, SANCT_R + 3));
   if (!s) continue;
-  const b = new Builder().with({ gy: [0, 1.3], top: 0x9ad25c, jit: .1 });
+  const b = new Builder().with({ gy: [0, 1.3], top: 0x9ad25c, jit: .08, cn: [0, .45, 0, .75] });
   for (let k = 0; k < 4; k++) { const a = k / 4 * TAU + sr(-.3, .3); b.add(BLOBS[(k + i) % 6], 0x3f7f2e, [Math.cos(a) * .32, sr(.42, .62), Math.sin(a) * .32], [sr(.5, .62), sr(.45, .55), sr(.5, .62)]); }
   b.add(BLOBS[i % 6], 0x3f7f2e, [0, .85, 0], .5);
   const base = new THREE.Mesh(b.bake(), toonVC()); base.castShadow = true; base.receiveShadow = true;
@@ -1035,8 +1194,8 @@ for (let i = 0; i < 30; i++) {
 /* crystals — shiny, irresistible, useless (now growing out of a little rock) */
 const MAT_CRYS = new THREE.MeshStandardMaterial({ color: 0x8ff0ff, emissive: 0x2fa8d0, emissiveIntensity: .6, roughness: .12, metalness: .3, flatShading: true });
 const MAT_CRYS2 = new THREE.MeshStandardMaterial({ color: 0xd2a6ff, emissive: 0x7a3fd0, emissiveIntensity: .5, roughness: .12, metalness: .3, flatShading: true });
-for (let i = 0; i < 10; i++) {
-  const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 1.4) && clearOf(bushes, x, z, 2.4) && clearOf(crystals, x, z, 12) && !nearNest(x, z, 10));
+for (let i = 0; i < 14; i++) {
+  const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 1.4) && clearOf(bushes, x, z, 2.4) && clearOf(crystals, x, z, 12) && !nearNest(x, z, SANCT_R + 2));
   if (!s) continue;
   const g = new THREE.Group(); g.position.set(s.x, s.h, s.z);
   const rb = new Builder().with({ sky: [.75, 1.1], moss: 0x6f9a3e }); rb.add(ROCKS[i % 4], 0x8f8a84, [0, .12, 0], [.6, .35, .55]);
@@ -1047,7 +1206,7 @@ for (let i = 0; i < 10; i++) {
   crystals.push({ x: s.x, z: s.z, r: .5, g, glintT: sr(0, 2) });
 }
 /* nest + egg: woven twigs, soft feather lining */
-const nestG = new THREE.Group();
+const nestG = new THREE.Group(), NEST_EGG = { mesh: null };
 (function buildNest() {
   const b = new Builder().with({ sky: [.7, 1.1], jit: .15 });
   b.add(new THREE.TorusGeometry(1.15, .42, 8, 22), 0x7e5a34, [0, .3, 0], 1, [Math.PI / 2, 0, 0]);
@@ -1056,7 +1215,7 @@ const nestG = new THREE.Group();
   b.with(null);
   for (let k = 0; k < 10; k++) { const a = sr(0, TAU), rr = sr(.3, .8); b.add(GEO.sph, k % 3 ? 0xf3eee4 : 0xc9c4bb, [Math.cos(a) * rr, .3, Math.sin(a) * rr], [.09, .03, .22], [0, a, sr(-.3, .3)]); }
   const m = new THREE.Mesh(b.bake(), toonVC()); m.castShadow = true; m.receiveShadow = true; nestG.add(m);
-  const egg = part(nestG, GEO.sph, toon(0xf6efdc), [.35, .62, -.2], [.32, .42, .32], [.2, 0, .25], .03);
+  const egg = part(nestG, GEO.sph, toon(0xf6efdc), [0, .58, 0], [.32, .42, .32], [.12, 0, .1], .03); NEST_EGG.mesh = egg;
   for (let k = 0; k < 6; k++) part(egg, GEO.sphLo, toon(0xb08860), [sr(-.7, .7), sr(-.5, .7), .93], .1);
   nestG.position.set(NEST.x, NEST.y - .05, NEST.z); scene.add(nestG);
 })();
@@ -1084,12 +1243,7 @@ function grassTint(x, z, h, out) {
   for (const m of meadows) { const d = Math.hypot(x - m.x, z - m.z); if (d < m.r + 1.5) out.lerp(_gB.setHex(0xb2d96c), (1 - d / (m.r + 1.5)) * .65); }
   return out;
 }
-const _gB = new THREE.Color();
 (function buildGrass() {
-  // keep the island's seeded layout identical: burn exactly the random numbers the old grass used
-  { const N0 = (window.matchMedia && matchMedia('(pointer:coarse)').matches) ? 7000 : 12000; let n0 = 0;
-    for (let i = 0; i < N0 * 4 && n0 < N0; i++) { const a = SR() * TAU, d = Math.sqrt(SR()) * 66, x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
-      if (h < .95 || h > 5.4 || nearNest(x, z, 1.8)) continue; SR(); SR(); SR(); SR(); SR(); n0++; } }
   const GR = mulberry(77031), gr = (a, b) => a + GR() * (b - a);
   // --- one tuft ---
   const BL = 5, SEG = 3, P = [], H = [], I = [];
@@ -1142,12 +1296,12 @@ const _gB = new THREE.Color();
   mat.customProgramCacheKey = () => 'grass2';
   // --- scatter in patches, bucketed into map tiles ---
   const COARSE_G = window.matchMedia && matchMedia('(pointer:coarse)').matches;
-  const N = COARSE_G ? 6000 : 11000, TILES = 6, SPAN = 140, CS = SPAN / TILES, buckets = [];
+  const N = COARSE_G ? 6200 : 11500, TILES = 8, SPAN = 190, CS = SPAN / TILES, buckets = [];
   for (let i = 0; i < TILES * TILES; i++) buckets.push([]);
   const c = new THREE.Color();
   let n = 0;
   for (let i = 0; i < N * 6 && n < N; i++) {
-    const a = GR() * TAU, d = Math.sqrt(GR()) * 66, x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
+    const a = GR() * TAU, d = Math.sqrt(GR()) * 88, x = Math.cos(a) * d, z = Math.sin(a) * d, h = groundH(x, z);
     if (h < .9 || h > 5.6 || nearNest(x, z, 1.9)) continue;
     const patch = smooth(.32, .68, fbm(x * .075 + 11.3, z * .075 + 4.1)), md = meadowAt(x, z) ? .35 : 0, dens = Math.min(1, patch + md);
     if (GR() > .18 + dens * .82) continue;
@@ -1451,22 +1605,24 @@ function applyEnv(df, focus) {
   sun.position.set(focus.x + dir.x * 90, Math.max(12, dir.y * 90), focus.z + dir.z * 90);
   sun.target.position.set(focus.x, 0, focus.z);
   sky.position.copy(camera.position);
-  scene.fog.near = lerp(70, 40, night); scene.fog.far = lerp(280, 170, night);
+  scene.fog.near = lerp(80, 45, night); scene.fog.far = lerp(330, 190, night);
   waterU.uFogNear.value = scene.fog.near; waterU.uFogFar.value = scene.fog.far;
+  lavaU.uFog.value.copy(scene.fog.color); lavaU.uFogNear.value = scene.fog.near; lavaU.uFogFar.value = scene.fog.far; lavaU.uNight.value = night;
 }
 
 /* =====================================================================
    3_chars: the dodo and the T-rex — models + animation rigs
    Forward is +Z for both. heading h => forward = (sin h, 0, cos h)
    ===================================================================== */
-function buildDodo() {
+function buildDodo(pal) {
+  pal = pal || {};
   /* Matches the Save the Dodo key art: chubby blue-grey body, white chest, big round head, huge eyes
      with brows, yellow beak with a big dark hooked tip, messy crest, white tail fluff, orange legs. */
   const root = new THREE.Group();
   const tilt = new THREE.Group(); root.add(tilt);
   const bob = new THREE.Group(); tilt.add(bob);
   const P = {};
-  const grey = toon(0x98a1ae), greyD = toon(0x6f7886), chest = toon(0xf4f1ea), fluff = toon(0xffffff), beakY = toon(0xffb62e), beakD = toon(0x3a3c42),
+  const grey = toon(pal.grey || 0x98a1ae), greyD = toon(pal.greyD || 0x6f7886), chest = toon(pal.chest || 0xf4f1ea), fluff = toon(0xffffff), beakY = toon(0xffb62e), beakD = toon(0x3a3c42),
     mouth = toon(0x9e2a33), tongue = toon(0xf07a8c), legM = toon(0xf7a12a), clawM = toon(0x2e2622), black = new THREE.MeshBasicMaterial({ color: 0x15100c }), eyeW = toon(0xffffff), brow = toon(0x4a505a);
   const OL = .038;
   // chubby egg body + white chest
@@ -1491,7 +1647,13 @@ function buildDodo() {
   const n2 = new THREE.Group(); n2.position.set(0, .2, .04); P.neck.add(n2); P.neck2 = n2;
   P.head = new THREE.Group(); P.head.position.set(0, .26, .02); n2.add(P.head);
   part(P.head, GEO.sph, grey, [0, .1, 0], [.44, .42, .42], null, OL);
-  part(P.head, GEO.sph, toon(0xb5bdc8), [0, .02, .2], [.34, .28, .26]);        // lighter cheeks / face
+  part(P.head, GEO.sph, toon(pal.face || 0xb5bdc8), [0, .02, .2], [.34, .28, .26]);        // lighter cheeks / face
+  if (pal.wife) {   // Doda: a hibiscus behind the crest, rosy cheeks, lashes
+    const fl = new THREE.Group(); fl.position.set(.26, .42, -.04); fl.rotation.set(.3, .4, -.5); P.head.add(fl);
+    for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; part(fl, GEO.sph, toon(0xff5f8f), [Math.cos(a) * .09, 0, Math.sin(a) * .09], [.08, .025, .06], [0, -a, 0], .012); }
+    part(fl, GEO.sphLo, toon(0xffd84a), [0, .02, 0], .04);
+    [1, -1].forEach(sd => part(P.head, GEO.sph, toon(0xf3a0ae), [.27 * sd, -.04, .26], [.08, .05, .04], [0, .6 * sd, 0]));
+  }
   // messy crest (also the control-loss signal)
   P.tuft = new THREE.Group(); P.tuft.position.set(0, .46, -.06); P.head.add(P.tuft);
   for (let i = 0; i < 6; i++) part(P.tuft, GEO.cone, i % 2 ? greyD : grey, [(i - 2.5) * .055, .1, -.03 * Math.abs(i - 2.5)], [.04, .3 - Math.abs(i - 2.5) * .03, .04], [-.25, 0, (i - 2.5) * .28], .016);
@@ -1517,6 +1679,7 @@ function buildDodo() {
     P.eyes.push({ g: e, pu, px: 0, py: 0, vx: 0, vy: 0, sd, r });
     const b = new THREE.Group(); b.position.set(.2 * sd, .2 + r + .03, .33); P.head.add(b);
     part(b, GEO.sph, brow, [0, 0, 0], [.11, .028, .04], null, .012);
+    if (pal.wife) for (let k = 0; k < 3; k++) part(b, GEO.cone, brow, [(k - 1) * .045 + .02 * sd, -.05, .03], [.012, .07, .012], [-.5, 0, (k - 1) * .4 + .25 * sd]);
     P.brows.push({ g: b, sd });
   });
   // orange legs, dark claws
@@ -2794,6 +2957,7 @@ function updateDodo(dt) {
   const h = groundH(D.pos.x, D.pos.z);
   { const was = D.inBush; D.inBush = bushAt(D.pos.x, D.pos.z); const v = Math.hypot(D.vel.x, D.vel.z);
     if (D.inBush !== was && v > 1.4 && G.mode === 'play') { const b = D.inBush || was; S.rustle(clamp(v / 6, .3, 1)); FX.leaves(b.x, groundH(b.x, b.z) + .9, b.z, Math.round(2 + v)); b.wob = 1; } }
+  D.shade = coverAt(D.pos.x, D.pos.z); D.temptCD = (D.temptCD || 0) - dt;
   const th = nearestThreat(), hunted = (isHunting(th.r) && th.r.state !== 'alert' && th.d < 22) || !!awakeTiger();
   // hunger
   D.hunger = Math.min(100, D.hunger + tv('hunger') * dt * (1 + (G.day - 1) * .12));
@@ -2809,9 +2973,10 @@ function updateDodo(dt) {
   if (h < -1.05 && D.state !== 'drown' && D.state !== 'honk' && D.state !== 'jump') { if (Q.carrying) dropShiny('glub'); setS('drown', 3.2, "He walked into the sea. Dodos can't swim!"); D.struggle = 0; D.strMode = 'drown'; S.splash(); say('yelp', { prio: 4 }); FX.splash(D.pos.x, D.pos.z, 24); hint('drown'); think('alarm', 3); }
 
   // dusk: home time
-  if ((G.dusk || G.night) && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 1.9 && ['wander', 'hush', 'panic', 'hide', 'popout', 'butterfly', 'stare'].indexOf(D.state) >= 0) {
-    if (Q.delivered >= quota()) { daySurvived(); return; }
-    Q.nagT -= dt; if (Q.nagT <= 0) { Q.nagT = 4; popup('needs ' + (quota() - Q.delivered) + ' more shin' + (quota() - Q.delivered === 1 ? 'y' : 'ies') + '!', NEST.x, NEST.y + 2.4, NEST.z, 'big', 1.6); hint('needShiny'); }
+  // v0.12: the day ends when it's sunset and BOTH of them are in the nest
+  if ((G.dusk || G.night) && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 2.4 && ['wander', 'hush', 'panic', 'hide', 'popout', 'butterfly', 'stare'].indexOf(D.state) >= 0) {
+    if (W.state === 'sit') { daySurvived(); return; }
+    Q.nagT -= dt; if (Q.nagT <= 0) { Q.nagT = 4; popup('where is Doda?!', NEST.x, NEST.y + 2.4, NEST.z, 'big', 1.6); hint('needShiny'); }
   }
   if (!G.dusk && !G.night && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 1.3 && D.notSleepyT <= 0 && G.mode === 'play') { D.notSleepyT = 9; popup('not sleepy', D.pos.x, D.y + 2, D.pos.z, 'small', 1.4); }
 
@@ -2832,10 +2997,18 @@ function updateDodo(dt) {
       if (D.oohTarget && D.oohT > 0) {
         D.oohT -= dt;
         if (D.oohT <= 0) {
-          if (hyp(D.pos.x, D.pos.z, D.oohTarget.x, D.oohTarget.z) < rad * 1.25 && D.oohTarget.ripe) startSnack(D.oohTarget);
+          if (hyp(D.pos.x, D.pos.z, D.oohTarget.x, D.oohTarget.z) < rad * 1.25 && D.oohTarget.ripe) {
+            // not hungry himself and Doda could eat? he picks one for her instead of scoffing it
+            if (!Q.carrying && D.hunger < 50 && W.state !== 'dead' && W.belly < 60) pluckBerry(D.oohTarget); else startSnack(D.oohTarget);
+          }
           D.oohTarget = null;
         }
       } else D.oohTarget = null;
+      // carrying Doda's berry: the longer the trip and the hungrier he is, the more he stares at it
+      if (D.state === 'wander' && carryingBerry() && D.temptCD <= 0) {
+        const p = .012 + Math.pow(Math.max(0, D.hunger - 25) / 75, 2) * .16;
+        if (Math.random() < p * dt) { setS('tempted', 1.7, "He's eyeing Doda's berry. HOLD HUSH to stop him!"); think('berry', 999); say('ooh', { prio: 3 }); popup('…hm.', D.pos.x, D.y + 2.2, D.pos.z, 'nom', 1.2); hint('tempted'); }
+      }
       if (D.state === 'wander' && !D.oohTarget) {
         const bf = nearestOf(butterflies, D.pos.x, D.pos.z, 7);
         const cr = nearestOf(crystals, D.pos.x, D.pos.z, 8);
@@ -2890,7 +3063,7 @@ function updateDodo(dt) {
       D.honkDir.copy(dir).normalize(); D.wasPanic = hunted || D.state === 'panic';
       if (D.state === 'snack' && D.target) D.target.ignoreUntil = G.time + 5;
       setS('honk', .55, 'HONK! He bolted. Everything heard that.'); D.honkCD = 4.5; D.lastHonk = G.time; D.strMode = ''; D.struggle = 0; D.eating = false;
-      makeNoise(D.pos.x, D.pos.z, 22, 0xfff27a, 'honk'); S.honk(); popup('HONK!', D.pos.x, D.y + 1.8, D.pos.z, 'honk', 1); FX.feathers(D.pos.x, D.y + .7, D.pos.z, 10); RUN.honk++;
+      makeNoise(D.pos.x, D.pos.z, 22, 0xfff27a, 'honk'); honkDecoy(D.pos.x, D.pos.z); S.honk(); popup('HONK!', D.pos.x, D.y + 1.8, D.pos.z, 'honk', 1); FX.feathers(D.pos.x, D.y + .7, D.pos.z, 10); RUN.honk++;
       locoSet(Math.atan2(D.honkDir.x, D.honkDir.z), Math.max(6, D.spd)); think('alarm', .6);
     } else if (D.honkCD > 0) { const b = $('bHonk'); b.animate([{ transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }], { duration: 180 }); }
   }
@@ -3046,6 +3219,16 @@ function updateDodo(dt) {
       if (D.stT <= 0) { setS(D.wasPanic ? 'panic' : 'wander', D.wasPanic ? 999 : 0, D.wasPanic ? "He's flailing. Steer him and he sprints!" : ''); if (!D.wasPanic) think(null); }
       break;
     case 'hush': ctrl = 0; grip = 10; D.crouch = true; break;
+    case 'tempted': {
+      ctrl = .15; grip = 8; maxSpd = 1; D.lookAt = null;
+      if (space) { setS('wander', 0, ''); think(null); D.temptCD = 9; popup(pick(["NO. It's HERS.", 'resisted!', 'not yours!']), D.pos.x, D.y + 2.2, D.pos.z, 'big', 1.2); say('mmph'); break; }
+      if (D.stT <= 0) {
+        const it = Q.carrying; if (it && it.kind === 'berry') { Q.carrying = null; DR.P.beakTip.remove(it.mesh); shinies.splice(shinies.indexOf(it), 1); }
+        D.hunger = Math.max(0, D.hunger - 28); RUN.snack++; RUN.ateHers = (RUN.ateHers || 0) + 1; S.chomp(.5); S.gulp();
+        popup(pick(['GULP. (oops)', 'it was HERS', 'oh no. delicious.']), D.pos.x, D.y + 2.2, D.pos.z, 'big', 1.4); setS('wander', 0, ''); think(null); D.temptCD = 6;
+      }
+      break;
+    }
     case 'hide': {
       ctrl = .9; maxSpd = 1.1; D.crouch = true; D.hidden = true;
       const b = D.inBush; if (b) { const dx = D.pos.x - b.x, dz = D.pos.z - b.z, d = Math.hypot(dx, dz), lim = b.r * .78; if (d > lim) { D.pos.x = b.x + dx / d * lim; D.pos.z = b.z + dz / d * lim; } }
@@ -3382,11 +3565,41 @@ function doSneeze(stifled) {
 }
 
 /* ---------------- T-rex brain ---------------- */
+/* ---- v0.12 line of sight ----
+   Trunks, bushes and big rocks between the T-rex and its target block the view; canopies it looks through
+   soften it. Standing quietly under trees adds cover: one tree half-hides him, a cluster (or one tree while
+   hushed) hides him completely. Running under trees still catches its eye. The nest grove is off limits. */
+function coverAt(x, z) {
+  let c = 0;
+  for (const t of trees) { if (!t.alive || !t.cover) continue; const dx = t.x - x, dz = t.z - z; if (dx > t.cover || dx < -t.cover || dz > t.cover || dz < -t.cover) continue; const d = Math.hypot(dx, dz); if (d < t.cover) c += d < t.cover * .65 ? 1 : .6; }
+  return c;
+}
+function losBlock(ax, az, bx, bz) {
+  let s = 0; const vx = bx - ax, vz = bz - az, L2 = vx * vx + vz * vz || 1;
+  const mnx = Math.min(ax, bx) - 7, mxx = Math.max(ax, bx) + 7, mnz = Math.min(az, bz) - 7, mxz = Math.max(az, bz) + 7;
+  const hit = (o, rad) => { const t = ((o.x - ax) * vx + (o.z - az) * vz) / L2; if (t < .04 || t > .97) return false; const px = ax + vx * t - o.x, pz = az + vz * t - o.z; return px * px + pz * pz < rad * rad; };
+  for (const t of trees) {
+    if (!t.alive || t.x < mnx || t.x > mxx || t.z < mnz || t.z > mxz) continue;
+    if (hit(t, t.r * 1.6 + .25)) s += 1; else if (t.cover > 1.5 && hit(t, t.cover * .75)) s += .35;
+    if (s >= 1) return s;
+  }
+  for (const b of bushes) { if (b.x < mnx || b.x > mxx || b.z < mnz || b.z > mxz) continue; if (hit(b, b.r * .75)) { s += .85; if (s >= 1) return s; } }
+  for (const r of rocks) { if (r.r < .95 || r.x < mnx || r.x > mxx || r.z < mnz || r.z > mxz) continue; if (hit(r, r.r * .8)) { s += .6; if (s >= 1) return s; } }
+  return s;
+}
+const inSanct = (x, z) => hyp(x, z, NEST.x, NEST.z) < SANCT_R;
+function concealment(x, z, spd, crouch) {   // cover he brings with him (shade overhead)
+  const shade = coverAt(x, z);
+  if (spd > 3.2 && !crouch) return Math.min(.5, shade * .25);
+  return Math.min(1, shade) * (crouch ? 1 : .7) + Math.max(0, shade - 1) * .5;
+}
 function rexSees(r, d, dx, dz, P) {
   if (D.dead || D.state === 'sleep') return false;
-  if (D.hidden) { const m = rexMouth(r); return hyp(m.x, m.z, D.pos.x, D.pos.z) < 2.8 && (G.time - D.lastFart < 5 || Math.hypot(D.vel.x, D.vel.z) > 1.4); }
+  if (inSanct(D.pos.x, D.pos.z)) return false;
+  if (D.hidden && D.inBush) { const m = rexMouth(r); return hyp(m.x, m.z, D.pos.x, D.pos.z) < 2.8 && (G.time - D.lastFart < 5 || Math.hypot(D.vel.x, D.vel.z) > 1.4); }
   let range = P.sight * (D.crouch ? .55 : 1) * (r.state === 'scan' ? 1.25 : 1);
   if (d > range) return false;
+  if (d > 5 && losBlock(r.x, r.z, D.pos.x, D.pos.z) + concealment(D.pos.x, D.pos.z, Math.hypot(D.vel.x, D.vel.z), D.crouch) >= 1) return false;
   if (d < 9 || r.state === 'scan') return true;
   return Math.abs(angDiff(r.heading, Math.atan2(dx, dz))) < 1.25;
 }
@@ -3416,13 +3629,14 @@ function advanceRex(r, dt) {
   const ox = r.x, oz = r.z;
   r.x += Math.sin(r.heading) * r.speed * dt; r.z += Math.cos(r.heading) * r.speed * dt;
   const p = { x: r.x, z: r.z }, hit = collide(p, 1.55 * r.rig.scale, obstacles); r.x = p.x; r.z = p.z;
+  { const nx = r.x - NEST.x, nz = r.z - NEST.z, nd = Math.hypot(nx, nz), lim = SANCT_R + 2.5; if (nd < lim) { r.x = NEST.x + nx / (nd || 1) * lim; r.z = NEST.z + nz / (nd || 1) * lim; r.atWall = (r.atWall || 0) + dt; } else r.atWall = 0; }
   if (groundH(r.x, r.z) < -.5) { r.x = ox; r.z = oz; r.heading += angDiff(r.heading, Math.atan2(-r.x, -r.z)) * Math.min(1, dt * 3); r.speed *= .9; }
   r.y = Math.max(groundH(r.x, r.z), -.4);
   // stuck on a tree? smash it. stuck on a rock? go around.
   if (hit && r.speed > 1.2 && (Math.sin(r.heading) * (hit.x - r.x) + Math.cos(r.heading) * (hit.z - r.z)) > 0) {
     r.blockT += dt; r.block = hit;
     if (r.blockT > .55) {
-      if (hit.type === 'tree' && (r.state === 'chase' || r.state === 'investigate' || r.state === 'recover' || r.state === 'roam')) smashTree(hit, r);
+      if (hit.type === 'tree' && !hit.giant && !hit.home && (r.state === 'chase' || r.state === 'investigate' || r.state === 'recover' || r.state === 'roam')) smashTree(hit, r);
       else { r.avoidT = .9; r.avoidS = Math.random() < .5 ? -1 : 1; }
       r.blockT = 0;
     }
@@ -3455,8 +3669,8 @@ function newWaypoint(r) {
   for (let i = 0; i < 40; i++) {
     let x, z;
     if (!resting && Math.random() < near && G.mode === 'play') { const a = rand(0, TAU), d = rand(G.night ? 4 : 14, G.night ? 16 : 34); x = D.pos.x + Math.cos(a) * d; z = D.pos.z + Math.sin(a) * d; }
-    else { const a = rand(0, TAU), d = Math.sqrt(Math.random()) * 58; x = Math.cos(a) * d; z = Math.sin(a) * d; if (resting && hyp(x, z, D.pos.x, D.pos.z) < 34) continue; }
-    if (groundH(x, z) > .6 && (G.mode !== 'play' || hyp(x, z, NEST.x, NEST.z) > 7)) { r.wx = x; r.wz = z; r.wpT = rand(10, 18); return; }
+    else { const a = rand(0, TAU), d = Math.sqrt(Math.random()) * 78; x = Math.cos(a) * d; z = Math.sin(a) * d; if (resting && hyp(x, z, D.pos.x, D.pos.z) < 34) continue; }
+    if (groundH(x, z) > .6 && hyp(x, z, NEST.x, NEST.z) > SANCT_R + 5) { r.wx = x; r.wz = z; r.wpT = rand(10, 18); return; }
   }
 }
 function updateRex(r, dt) {
@@ -3468,6 +3682,7 @@ function updateRex(r, dt) {
   const sees = playing && r.graceT <= 0 && rexSees(r, d, dx, dz, P);
   r.headTrack = (sees || isHunting(r)) ? D.pos : null;
   r.rig.lane.visible = false;
+  if (rexWifeBrain(r, dt, P, sees)) { if (/W$/.test(r.state)) r.headTrack = { x: W.x, z: W.z }; return; }
   const smellCheck = () => {
     if (!playing || r.graceT > 0) return;
     let best = null;
@@ -3540,7 +3755,8 @@ function updateRex(r, dt) {
     }
     case 'chase': {
       r.chaseT = (r.chaseT || 0) + dt;
-      if (r.chaseT > 15 + G.day * 2 && d > 8) { r.chaseT = 0; setR(r, 'roam', 0); r.restT = 20; newWaypoint(r); r.graceT = 6; const hp = rexHeadWorld(r); popup('huff.', hp.x, hp.y + 1.4, hp.z, 'small', 1.4); S.huff(clamp(1 - d / 50, .2, .9), clamp((r.x - camera.position.x) / 30, -1, 1)); showBanner('IT GAVE UP!', true); break; }
+      if (inSanct(D.pos.x, D.pos.z) && (r.atWall > .6 || d > 14)) r.chaseT = 999;
+      if (r.chaseT > 15 + G.day * 2 && (d > 8 || r.chaseT > 900)) { r.chaseT = 0; setR(r, 'roam', 0); r.restT = 20; newWaypoint(r); r.graceT = 6; const hp = rexHeadWorld(r); popup('huff.', hp.x, hp.y + 1.4, hp.z, 'small', 1.4); S.huff(clamp(1 - d / 50, .2, .9), clamp((r.x - camera.position.x) / 30, -1, 1)); showBanner('IT GAVE UP!', true); break; }
       if (sees) { r.lastSeenX = D.pos.x; r.lastSeenZ = D.pos.z; r.lastSeenT = G.time; }
       const gx = sees ? D.pos.x + D.vel.x * .35 : r.lastSeenX, gz = sees ? D.pos.z + D.vel.z * .35 : r.lastSeenZ;
       const m0 = rexMouth(r), md0 = hyp(m0.x, m0.z, D.pos.x, D.pos.z);
@@ -3604,13 +3820,13 @@ function startDay(first) {
   setS('wander', 0, ''); D.struggle = 0; D.strMode = ''; D.hunger = first ? 30 : Math.min(D.hunger, 42); D.snacksToday = 0; D.thought = null; D.panicT = 0; D.sneezeT = rand(14, 22); D.fartT = rand(10, 16);
   D.dead = false; D.quit = false; D.oohTarget = null; D.target = null; D.lookAt = null; 
   for (const b of berryBushes) { b.ripe = true; b.berries.visible = true; b.ignoreUntil = 0; }
-  scents.length = 0; resetTigers(); spawnShinies(); clearPoops(); D.tummyIn = 0; D.curio = null; D.idleT = 0;
+  scents.length = 0; resetTigers(); spawnShinies(); clearPoops(); resetWife(first); hideBaby(); D.tummyIn = 0; D.curio = null; D.idleT = 0;
   const n = G.day >= 3 ? 2 : 1;
   for (let i = 0; i < 2; i++) { if (i < n) spawnRex(i); else if (rexes[i]) { rexes[i].active = false; rexes[i].rig.root.visible = false; rexes[i].rig.lane.visible = false; rexes[i].rig.stars.visible = false; } }
   for (const r of rexes) if (r.active) { r.graceT = r.id === 0 ? (first ? 24 : 14) : 18; r.restT = 0; }
 }
 function resetWorld() {
-  for (const t of trees) { t.alive = true; t.fall = null; t.grp.quaternion.identity(); t.shake = 0; }
+  for (const t of trees) { t.alive = true; t.fall = null; t.grp.rotation.set(0, t.yaw, 0); t.shake = 0; }
   for (const b of berryBushes) { b.ripe = true; b.berries.visible = true; }
   Object.keys(RUN).forEach(k => RUN[k] = 0);
   G.day = 1; G.time = 0; G.firstChase = true; G.totalTime = 0;
@@ -3618,7 +3834,8 @@ function resetWorld() {
 }
 function daySurvived() {
   setS('sleep', 999, 'Home safe. For now.'); think('zzz', 999); say('yawn', { prio: 6 }); setTimeout(() => { if (D.state === 'sleep') play('d_snore', { vol: .6 }); }, 1600);
-  D.pos.set(NEST.x, NEST.y, NEST.z); locoReset();
+  D.pos.set(NEST.x - 1.1, NEST.y, NEST.z + .5); locoReset(); W.state = 'sleep';
+  if (G.day >= 3) { G.mode = 'daycard'; G.dayCardT = 0; RUN.days = G.day; RUN.won = true; S.jingle(); showBanner('THEY MADE IT!', true); hideToast(); document.body.classList.add('cine'); for (const r of rexes) r.rig.lane.visible = false; startHatch(); setTimeout(showWin, 6200); return; }
   G.mode = 'daycard'; G.dayCardT = 0; RUN.days = G.day;
   S.jingle(); showBanner('SAFE!', true); hideToast(); FX.hearts(D.pos.x, D.y + 1.5, D.pos.z);
   document.body.classList.add('cine');
@@ -3626,9 +3843,9 @@ function daySurvived() {
   setTimeout(() => {
     if (G.mode !== 'daycard') return;
     $('dcHead').textContent = 'DAY ' + G.day + ' SURVIVED';
-    $('dcTxt').textContent = `He brought home ${Q.delivered} shinies, ate ${D.snacksToday} berr${D.snacksToday === 1 ? 'y' : 'ies'}, farted ${RUN.fart} times this run, and nearly died ${RUN.near} times. He has learned nothing.`;
+    $('dcTxt').textContent = `He brought Doda ${Q.delivered} shin${Q.delivered === 1 ? 'y' : 'ies'} and ${Q.berries} berr${Q.berries === 1 ? 'y' : 'ies'}${RUN.ateHers ? ' (and ate ' + RUN.ateHers + ' of hers)' : ''}, farted ${RUN.fart} times, and nearly died ${RUN.near} times. The egg is warm.`;
     const nx = G.day + 1;
-    $('dcNext').innerHTML = '<b>DAY ' + nx + ':</b> ' + (nx === 2 ? 'The T-rex is faster now. And it has learned what dodo farts smell like.' : nx === 3 ? 'There are two of them now. The new one is smaller, faster, and turns better.' : 'Everything is faster. He is not.');
+    $('dcNext').innerHTML = '<b>DAY ' + nx + ':</b> ' + (nx === 2 ? 'The T-rex is faster now, and it knows what dodo farts smell like. Doda gets bored faster.' : 'Two T-rexes. Hungrier Doda. Survive tomorrow and the egg hatches.');
     $('dayCard').hidden = false; $('nextBtn').focus();
     saveBest();
   }, 1800);
@@ -3644,19 +3861,19 @@ function nextDay() {
 /* ---------------- records ---------------- */
 function getBest() { try { return JSON.parse(localStorage.getItem('dodo_best') || 'null'); } catch (e) { return null; } }
 function saveBest() {
-  const cur = { days: RUN.days, time: G.totalTime };
+  const cur = { days: RUN.days, time: G.totalTime, won: !!RUN.won };
   const b = getBest();
-  if (!b || cur.days > b.days || (cur.days === b.days && cur.time > b.time)) { try { localStorage.setItem('dodo_best', JSON.stringify(cur)); } catch (e) { } return true; }
+  if (!b || (cur.won && !b.won) || cur.days > b.days || (cur.days === b.days && cur.time > b.time)) { try { localStorage.setItem('dodo_best', JSON.stringify(cur)); } catch (e) { } return true; }
   return false;
 }
 function bestLine() {
   const b = getBest();
-  return b ? `Best run: ${b.days} day${b.days === 1 ? '' : 's'} survived, ${fmt(b.time)} alive.` : 'No record yet. He has never survived anything.';
+  return b ? (b.won ? `You hatched the egg! Best: ${fmt(b.time)}.` : `Best run: ${b.days} day${b.days === 1 ? '' : 's'} survived, ${fmt(b.time)} alive.`) : 'No record yet. He has never survived anything.';
 }
 
 /* ---------------- hints (each shown once per session) ---------------- */
 const HINTS = {
-  start: 'WASD or arrow keys steer him. He goes where you point… mostly. Your current job is always top-left.',
+  start: 'WASD or arrow keys steer him. Keep Doda happy (her bars are top-left) and stay under the trees.',
   snack: 'SNACK LOCK! Push HARD the opposite way to drag him off it. Or HONK (Shift).',
   hidden: "Hidden. Keep holding SPACE. If he's still, it can't see him.",
   sneeze: 'Ah… ah… hold SPACE to stifle the sneeze!',
@@ -3669,8 +3886,12 @@ const HINTS = {
   drown: 'He is sinking. Push him back toward the beach!',
   hush: 'Hold SPACE outside a bush to freeze him in place.',
   beakFull: 'His beak is full of shiny, so he can\'t eat. Get it home, or he drops it when he\'s starving.',
-  shiny: 'Got one! Carry it home to the nest. (He can\'t eat with a full beak.)',
-  needShiny: 'He won\'t sleep in a boring nest. Find more shinies!',
+  shiny: 'Got one! Take it to Doda at the nest. (He can\'t eat with a full beak.)',
+  needShiny: "He won't sleep without Doda. Go and get her: carry a shiny past her and she follows.",
+  berryCarry: "He picked a berry for Doda. Get it to her before he gets peckish and eats it himself.",
+  tempted: "He's thinking about eating Doda's berry. HOLD HUSH to talk him out of it!",
+  wifeLeft: "Doda got bored and left the egg! It's cooling. Carry a shiny past her and she'll follow it home.",
+  wifeHunted: "The T-rex has seen Doda! HONK near it and it comes after him instead. Or lure her into the trees.",
   curious: 'Left alone, he gets bored and goes exploring. Even near sleeping cats.',
   tummy: 'He ate too much. Tummy ache! He has to lie down (and he will fart).',
   tiger: 'Sleeping sabertooth! Tiptoe past. Farts, falls, sneezes and honks wake it. Bumping it definitely does.',
@@ -3699,7 +3920,7 @@ function newRun() {
   stageEl.style.transition = 'none'; stageEl.style.filter = '';
   $('death').hidden = true; $('dayCard').hidden = true; $('title').hidden = true; $('pause').hidden = true;
   for (const p of pops) p.el.remove(); pops.length = 0;
-  resetWorld(); startDay(true); G.camYaw = G.inYaw = 0; G.camYawTo = null; G.lookV.set(0, 0, 0);
+  hideBaby(); $('winCard').hidden = true; resetWorld(); startDay(true); G.camYaw = G.inYaw = 0; G.camYawTo = null; G.lookV.set(0, 0, 0);
   G.mode = 'intro'; G.introT = 0; G.introDay = true;
   $('introDay').textContent = 'DAY 1'; $('introDay').classList.add('on');
   $('introCap').classList.remove('on'); showMission(1); G.introLen = 6.4;   // time to read the four jobs (tap skips)
@@ -3710,13 +3931,13 @@ function newRun() {
 function beginPlay() {
   G.mode = 'play'; document.body.classList.remove('cine');
   $('introCap').classList.remove('on'); $('introDay').classList.remove('on'); $('skip').hidden = true; hideMission(true);
-  if (G.day === 1) { if (COARSE) HINTS.start = 'Drag anywhere to steer him. Left thumb: jump · honk · hush.'; hint('start'); }
+  if (G.day === 1) { if (COARSE) HINTS.start = 'Drag anywhere to steer. Doda\'s bars are top-left. Trees hide him.'; hint('start'); }
   setTimeout(() => $('keys').classList.add('fade'), 26000);
 }
 function showDeath() {
   G.mode = 'dead';
   $('deathCause').textContent = D.cause; $('deathCap').textContent = D.cause;
-  $('deathHead').textContent = D.quit ? 'YOU GAVE UP.' : D.deathKind === 'tiger' ? 'THE CAT GOT HIM.' : D.deathKind === 'starve' ? 'HE FORGOT TO EAT.' : (D.deathKind === 'drown' ? 'HE WENT SWIMMING.' : 'HE IS DEAD.');
+  $('deathHead').textContent = D.quit ? 'YOU GAVE UP.' : D.deathKind === 'wife' ? 'DODA GOT EATEN.' : D.deathKind === 'egg' ? 'THE EGG GOT COLD.' : D.deathKind === 'tiger' ? 'THE CAT GOT HIM.' : D.deathKind === 'starve' ? 'HE FORGOT TO EAT.' : (D.deathKind === 'drown' ? 'HE WENT SWIMMING.' : 'HE IS DEAD.');
   $('dTime').textContent = fmt(G.totalTime); $('dDay').textContent = G.day; $('dSnack').textContent = RUN.snack; $('dFart').textContent = RUN.fart; $('dTrip').textContent = RUN.shiny || 0; $('dNear').textContent = RUN.near;
   const rec = saveBest();
   $('deathQuip').textContent = (rec && G.totalTime > 20 ? 'New personal best! ' : '') + pick(QUIPS);
@@ -3763,7 +3984,7 @@ function updateCamera(dtR) {
   if (G.debugCam) return;
   if (m === 'title') {
     const a = G.realT * .045;
-    _cl.set(0, 1, -4); _cp.set(Math.sin(a) * 64, 30 + Math.sin(a * .7) * 6, Math.cos(a) * 64 + 8);
+    _cl.set(0, 2, -4); _cp.set(Math.sin(a) * 84, 36 + Math.sin(a * .7) * 7, Math.cos(a) * 84 + 8);
     camera.position.lerp(_cp, 1 - Math.exp(-1.2 * dtR)); camLook.lerp(_cl, 1 - Math.exp(-1.2 * dtR));
   } else if (m === 'intro') {
     const t = easeIO(clamp((G.introT - .6) / 3.6, 0, 1));
@@ -3771,8 +3992,9 @@ function updateCamera(dtR) {
     const gp = new V3(), gl = new V3(); gameplayCam(gp, gl, dtR);
     camera.position.copy(close).lerp(gp, t); camLook.copy(cl).lerp(gl, t);
   } else if (m === 'dying' || m === 'dead') {
-    if (G.killer) {
-      const hp = rexHeadWorld(G.killer), r = G.killer;
+    if (G.deathKind === 'egg') { _cl.set(NEST.x, NEST.y + .5, NEST.z); _cp.set(NEST.x + 2.5, NEST.y + 2.8, NEST.z + 4.5); }
+    else if (G.killer || G.wifeKiller) {
+      const r = G.killer || G.wifeKiller, hp = rexHeadWorld(r);
       const side = Math.sign(Math.cos(r.heading) * (camera.position.x - r.x) - Math.sin(r.heading) * (camera.position.z - r.z)) || 1;
       _cl.set(hp.x, hp.y - .3, hp.z);
       if (G.deathT > 1.7 && G.deathT < 2.7) _cl.y = Math.max(hp.y, D.y) - .2;
@@ -3781,7 +4003,7 @@ function updateCamera(dtR) {
     const k = 1 - Math.exp(-(G.deathT < .35 ? 1.4 : 2.2) * dtR);
     camera.position.lerp(_cp, k); camLook.lerp(_cl, k);
   } else if (m === 'daycard') {
-    _cl.set(NEST.x, NEST.y + .6, NEST.z); _cp.set(NEST.x - 3, NEST.y + 3.2, NEST.z + 6.5);
+    if (G.hatching) { _cl.set(NEST.x, NEST.y + .7, NEST.z); _cp.set(NEST.x + .4, NEST.y + 2.3, NEST.z + 4.8); } else { _cl.set(NEST.x, NEST.y + .6, NEST.z); _cp.set(NEST.x - 3, NEST.y + 3.2, NEST.z + 6.5); }
     const k = 1 - Math.exp(-1.6 * dtR); camera.position.lerp(_cp, k); camLook.lerp(_cl, k);
   } else {
     gameplayCam(_cp, _cl, dtR);
@@ -3803,9 +4025,10 @@ const STATE_UI = {
   popout: ['BORED', 'He got bored of hiding and went to look.', 'lost'], recoil: ['ACHOO!', 'Loudest sneeze on the island.', 'lost'],
   tummy: ['TUMMY ACHE', 'He ate too much. He has to lie down. And fart.', 'lost'],
   drown: ['SINKING', "Dodos can't swim. Push him to the beach!", 'danger'], sleep: ['ASLEEP', 'Home safe. For now.', 'calm'],
-  jump: ['JUMP!', 'Airborne. Briefly.', 'calm'], bonk: ['BONK!', 'Ran face-first into something. Classic.', 'lost'], tumble: ['WIPEOUT!', 'Jumping at full sprint is a gamble.', 'lost'], stagger: ['STAGGERING', 'Back on his feet. Mostly.', 'lost']
+  jump: ['JUMP!', 'Airborne. Briefly.', 'calm'], tempted: ['TEMPTED…', "He's eyeing Doda's berry. HOLD HUSH!", 'lost'], bonk: ['BONK!', 'Ran face-first into something. Classic.', 'lost'], tumble: ['WIPEOUT!', 'Jumping at full sprint is a gamble.', 'lost'], stagger: ['STAGGERING', 'Back on his feet. Mostly.', 'lost']
 };
 const IDLE = ['He is doing roughly what you asked.', 'Currently cooperating. Enjoy it.', 'Nothing has hijacked him. Yet.', 'He is thinking about nothing at all.'];
+const HEART_SVG = '<path d="M20 33C8 25 5 18 7 13c2-5 9-6 13 0 4-6 11-5 13 0 2 5-1 12-13 20z" fill="#ff5f8f" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/>';
 const STCOL = { calm: '#fffaf0', snack: '#ffc23a', lost: '#ff9a3d', danger: '#ff3d1f' };
 const BUB = {
   berry: '<svg viewBox="0 0 40 40"><path d="M20 8c3-5 9-6 12-4-2 4-7 6-12 4z" fill="#4f9e36" stroke="#24170e" stroke-width="2"/><circle cx="14" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="26" cy="22" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="20" cy="31" r="7" fill="#e5303e" stroke="#24170e" stroke-width="2.5"/><circle cx="12" cy="20" r="2" fill="#fff"/></svg>',
@@ -3825,9 +4048,11 @@ function updateHUD(dtR) {
   const th = nearestThreat();
   if (key === 'wander') {
     idleT -= dtR; if (idleT <= 0) { idleT = 5; idleIdx = (idleIdx + 1) % IDLE.length; } why = IDLE[idleIdx];
-    if (Q.carrying && !G.dusk && !G.night) { name = 'GOT A SHINY'; why = 'Take it home to the nest.'; tone = 'snack'; }
+    if (Q.carrying && !G.dusk && !G.night) { name = carryingBerry() ? 'GOT A BERRY' : 'GOT A SHINY'; why = wifeOff() ? 'Walk it past Doda. She will follow it home.' : 'Take it home to Doda.'; tone = 'snack'; }
     if (D.hunger > 72) { name = D.hunger > 88 ? 'STARVING!' : 'HANGRY'; why = Q.carrying ? 'His beak is full of shiny. He can\'t eat until he drops it.' : 'Follow the berry marker. He needs a snack. Now.'; tone = D.hunger > 88 ? 'danger' : 'snack'; }
     if (G.dusk || G.night) { name = G.night ? 'NIGHT' : 'SUNSET'; why = 'Get him home to the nest!'; tone = G.night ? 'danger' : 'snack'; }
+    if (name !== STATE_UI.wander[0]) { } else if (inSanct(D.pos.x, D.pos.z)) { name = 'HOME GROVE'; why = 'Nothing big gets in here.'; tone = 'calm'; }
+    else { const cv = concealment(D.pos.x, D.pos.z, Math.hypot(D.vel.x, D.vel.z), D.crouch); if (cv >= .99) { name = 'HIDDEN IN THE TREES'; why = "It can't see him in here. Keep it slow and quiet."; tone = 'calm'; } else if (cv >= .6) { name = 'HALF HIDDEN'; why = 'One tree helps. A cluster (or HUSH) hides him.'; tone = 'calm'; } }
     const nt = nearestSleepingTiger();
     if (nt.t && nt.d < 11) { name = nt.t.state === 'stir' ? 'IT HEARD SOMETHING' : 'TIPTOE…'; why = nt.t.state === 'stir' ? 'One eye is open. Do NOT mess up again.' : 'A sabertooth is asleep. No farting. No falling over.'; tone = nt.t.state === 'stir' ? 'danger' : 'lost'; }
     if (th.r && isHunting(th.r)) { name = "IT'S HUNTING HIM"; why = 'It has seen him. He has not noticed.'; tone = 'danger'; }
@@ -3854,7 +4079,10 @@ function updateHUD(dtR) {
   $('sunDot').setAttribute('cx', (50 + Math.cos(ang) * 44).toFixed(1)); $('sunDot').setAttribute('cy', (40 - Math.sin(ang) * 34).toFixed(1));
   $('sunDot').setAttribute('fill', G.night ? '#c8d0ff' : (G.dusk ? '#ff8a4c' : '#ffc23a'));
   $('dayLbl').textContent = 'DAY ' + G.day;
-  { const q = quota(), d = Math.min(Q.delivered, q); const txt = d + ' / ' + q + (Q.carrying ? ' · carrying 1' : ''); if ($('shinyTxt').textContent !== txt) $('shinyTxt').textContent = txt; $('shinyRow').classList.toggle('done', Q.delivered >= q); }
+  { $('dAttn').style.width = Math.max(3, W.attn) + '%'; $('dBelly').style.width = Math.max(3, W.belly) + '%';
+    $('dAttn').parentNode.classList.toggle('low', W.attn < 30); $('dBelly').parentNode.classList.toggle('low', W.belly < 30);
+    const cold = wifeOff(); $('dEgg').classList.toggle('cold', cold); $('dEgg').style.setProperty('--w', (W.warm / 100).toFixed(2));
+    $('dodaRow').classList.toggle('away', cold); }
   const left = G.dayLen * .78 - G.dayT;
   $('dayHint').textContent = G.night ? 'Night. Everything can smell him.' : (G.dusk ? 'Sunset! Get him home.' : 'Sunset in ' + fmt(left));
   const bel = 100 - D.hunger;
@@ -3877,27 +4105,29 @@ function updateHUD(dtR) {
   // off-screen indicators: T-rexes + nest at dusk
   const targets = [];
   for (const r of rexes) if (r.active && G.mode === 'play' && hyp(r.x, r.z, D.pos.x, D.pos.z) < 55) targets.push({ x: r.x, y: r.y + 4, z: r.z, kind: isHunting(r) ? 'hot' : 'rex' });
-  if (D.hunger > 70 && G.mode === 'play' && !Q.carrying) { const bb = nearestRipe(D.pos.x, D.pos.z, 80, G.time); if (bb) targets.push({ x: bb.x, y: groundH(bb.x, bb.z) + 1, z: bb.z, kind: 'berry' }); }
-  if ((G.dusk || G.night || Q.carrying) && G.mode === 'play') targets.push({ x: NEST.x, y: NEST.y + 1, z: NEST.z, kind: 'nest' });
-  else if (G.mode === 'play' && Q.delivered < quota()) { const sh = nearestGroundShiny(); if (sh && hyp(sh.x, sh.z, D.pos.x, D.pos.z) < 70) targets.push({ x: sh.x, y: groundH(sh.x, sh.z) + .5, z: sh.z, kind: 'shiny' }); }
+  const playing = G.mode === 'play';
+  if (playing && !Q.carrying && (D.hunger > 70 || (W.belly < 45 && !wifeOff()))) { const bb = nearestRipe(D.pos.x, D.pos.z, 90, G.time); if (bb) targets.push({ x: bb.x, y: groundH(bb.x, bb.z) + 1, z: bb.z, kind: 'berry' }); }
+  if (playing && wifeOff()) targets.push({ x: W.x, y: W.y + 1.6, z: W.z, kind: 'wife' });
+  if (playing && (G.dusk || G.night || (Q.carrying && !wifeOff()))) targets.push({ x: NEST.x, y: NEST.y + 1, z: NEST.z, kind: 'nest' });
+  else if (playing && !Q.carrying && (W.attn < 80 || wifeOff())) { const sh = nearestGroundShiny(); if (sh && hyp(sh.x, sh.z, D.pos.x, D.pos.z) < 90) targets.push({ x: sh.x, y: groundH(sh.x, sh.z) + .5, z: sh.z, kind: 'shiny' }); }
   while (indEls.length < targets.length) { const e = document.createElement('div'); e.className = 'edge'; e.innerHTML = '<div class="arr"></div><svg viewBox="0 0 40 40"></svg>'; $('ind').appendChild(e); indEls.push(e); }
-  const W = window.innerWidth, H = window.innerHeight, M = 46;
+  const VW = window.innerWidth, H = window.innerHeight, M = 46;
   indEls.forEach((e, i) => {
     const tg = targets[i]; if (!tg) { e.style.display = 'none'; return; }
     toScreen(tg.x, tg.y, tg.z, _sc);
     let x = _sc.x, y = _sc.y;
-    if (_sc.behind) { x = W - x; y = H - M; }
-    const on = !_sc.behind && x > M && x < W - M && y > M + 80 && y < H - M;
+    if (_sc.behind) { x = VW - x; y = H - M; }
+    const on = !_sc.behind && x > M && x < VW - M && y > M + 80 && y < H - M;
     if (on) { e.style.display = 'none'; return; }
-    const cx = W / 2, cy = H / 2, dx = x - cx, dy = y - cy;
-    const s = Math.min((W / 2 - M) / Math.abs(dx || 1e-3), (H / 2 - M) / Math.abs(dy || 1e-3));
+    const cx = VW / 2, cy = H / 2, dx = x - cx, dy = y - cy;
+    const s = Math.min((VW / 2 - M) / Math.abs(dx || 1e-3), (H / 2 - M) / Math.abs(dy || 1e-3));
     x = cx + dx * s; y = cy + dy * s;
-    if (COARSE ? (x < 240 && y > H - 290) : (x > W - 120 && y > H - 230)) y = COARSE ? H - 290 : H - 230;   // keep clear of the buttons
+    if (COARSE ? (x < 240 && y > H - 290) : (x > VW - 120 && y > H - 230)) y = COARSE ? H - 290 : H - 230;   // keep clear of the buttons
     e.style.display = ''; e.style.transform = `translate(${x.toFixed(0)}px,${y.toFixed(0)}px)`;
-    e.className = 'edge' + (tg.kind === 'hot' ? ' hot' : tg.kind === 'nest' ? ' nest' : tg.kind === 'shiny' ? ' shiny' : tg.kind === 'berry' ? ' berry' : '');
+    e.className = 'edge' + (tg.kind === 'hot' ? ' hot' : tg.kind === 'nest' ? ' nest' : tg.kind === 'shiny' ? ' shiny' : tg.kind === 'berry' ? ' berry' : tg.kind === 'wife' ? ' wife' : '');
     e.firstChild.style.transform = `rotate(${(Math.atan2(dy, dx) * 180 / Math.PI + 90).toFixed(0)}deg)`;
-    const want = tg.kind === 'nest' ? 'nest' : tg.kind === 'shiny' ? 'shiny' : tg.kind === 'berry' ? 'berry' : 'rex';
-    if (e.dataset.k !== want) { e.dataset.k = want; e.lastChild.innerHTML = want === 'berry' ? BUB.berry.replace(/^<svg[^>]*>|<\/svg>$/g, '') : want === 'shiny' ? shinyIcon() : want === 'nest' ? '<ellipse cx="20" cy="26" rx="15" ry="7" fill="#8a6238" stroke="#24170e" stroke-width="2.5"/><ellipse cx="20" cy="18" rx="6" ry="8" fill="#f6efdc" stroke="#24170e" stroke-width="2.5"/>' : '<ellipse cx="20" cy="26" rx="7" ry="8" fill="#24170e"/><ellipse cx="10" cy="13" rx="3.5" ry="7" transform="rotate(-25 10 13)" fill="#24170e"/><ellipse cx="20" cy="9" rx="3.5" ry="7.5" fill="#24170e"/><ellipse cx="30" cy="13" rx="3.5" ry="7" transform="rotate(25 30 13)" fill="#24170e"/>'; }
+    const want = tg.kind === 'nest' ? 'nest' : tg.kind === 'shiny' ? 'shiny' : tg.kind === 'berry' ? 'berry' : tg.kind === 'wife' ? 'wife' : 'rex';
+    if (e.dataset.k !== want) { e.dataset.k = want; e.lastChild.innerHTML = want === 'wife' ? HEART_SVG : want === 'berry' ? BUB.berry.replace(/^<svg[^>]*>|<\/svg>$/g, '') : want === 'shiny' ? shinyIcon() : want === 'nest' ? '<ellipse cx="20" cy="26" rx="15" ry="7" fill="#8a6238" stroke="#24170e" stroke-width="2.5"/><ellipse cx="20" cy="18" rx="6" ry="8" fill="#f6efdc" stroke="#24170e" stroke-width="2.5"/>' : '<ellipse cx="20" cy="26" rx="7" ry="8" fill="#24170e"/><ellipse cx="10" cy="13" rx="3.5" ry="7" transform="rotate(-25 10 13)" fill="#24170e"/><ellipse cx="20" cy="9" rx="3.5" ry="7.5" fill="#24170e"/><ellipse cx="30" cy="13" rx="3.5" ry="7" transform="rotate(25 30 13)" fill="#24170e"/>'; }
   });
 }
 
@@ -3924,10 +4154,14 @@ function updateWorld(dt, t) {
       tr.grp.rotation.x = Math.sin(t * .9 + tr.ph) * .018 + Math.sin(t * 31 + tr.ph) * .05 * tr.shake;
       tr.grp.rotation.z = Math.cos(t * .7 + tr.ph) * .018 + Math.cos(t * 27 + tr.ph) * .05 * tr.shake;
     }
-    const occl = occludes(tr.x, tr.z, 3.4) || (G.mode !== 'dying' && G.mode !== 'dead' && hyp(tr.x, tr.z, D.pos.x, D.pos.z) < 3.4);
-    const want = (occl && G.mode !== 'title') ? .28 : 1;
+    // v0.12: in a jungle the camera sits among canopies. Anything between the camera and him, or around
+    // the camera itself, fades almost away; trees he's standing under go see-through.
+    const cv = Math.max(tr.cover || 2, 2.4), camIn = hyp(tr.x, tr.z, camera.position.x, camera.position.z) < cv + 1.2;
+    const occl = occludes(tr.x, tr.z, cv + .6) || camIn;
+    const under = G.mode !== 'dying' && G.mode !== 'dead' && hyp(tr.x, tr.z, D.pos.x, D.pos.z) < cv + .4;
+    const want = G.mode === 'title' ? 1 : occl ? (tr.giant && !camIn ? .35 : .1) : under ? .4 : 1;
     tr.fade += (want - tr.fade) * Math.min(1, dt * 6);
-    tr.mat.transparent = tr.fade < .99; tr.mat.opacity = tr.fade; tr.mat.depthWrite = tr.fade > .6;
+    tr.mat.transparent = tr.fade < .99; tr.mat.opacity = tr.fade; tr.mat.depthWrite = tr.fade > .6; tr.grp.visible = tr.fade > .14;
   }
   for (const b of bushes) {
     const inside = hyp(b.x, b.z, D.pos.x, D.pos.z) < b.r + .3;
@@ -3960,7 +4194,7 @@ function updateWorld(dt, t) {
   // scents: visible wisps the T-rex can follow
   for (let i = scents.length - 1; i >= 0; i--) { const s = scents[i]; s.age += dt; if (s.age > s.life) { scents.splice(i, 1); continue; } if (Math.random() < dt * 1.6 * (1 - s.age / s.life)) FX.wisp(s.x, groundH(s.x, s.z), s.z); }
   // volcano smoke, clouds, fireflies
-  smokeT -= dt; if (smokeT <= 0) { smokeT = .35; FX.smoke(-70, 64, -190); }
+  smokeT -= dt; if (smokeT <= 0) { smokeT = .3; FX.smoke(VOLC.x + rand(-5, 5), VOLC.top, VOLC.z + rand(-5, 5)); }
   for (const c of CLOUDS) { c.position.x += c.userData.v * dt; if (c.position.x > 340) c.position.x = -340; }
   if (ENV.night > .3 && (fireT -= dt) <= 0) { fireT = .12; FX.firefly(D.pos.x, D.y, D.pos.z); }
   // beacon at dusk
@@ -3973,7 +4207,7 @@ function updateWorld(dt, t) {
   const r0 = rexes[0], r1 = rexes[1];
   grassU.uRex.value.set(r0 && r0.active ? r0.x : 999, r0 && r0.active ? r0.z : 999);
   grassU.uRex2.value.set(r1 && r1.active ? r1.x : 999, r1 && r1.active ? r1.z : 999);
-  waterU.uTime.value = t;
+  waterU.uTime.value = t; lavaU.uTime.value = t;
 }
 
 /* ---------------- music & ambience levels ---------------- */
@@ -3984,6 +4218,7 @@ function updateAudio(dtR) {
     if (!r.active) continue;
     const d = hyp(r.x, r.z, D.pos.x, D.pos.z); near = Math.min(near, d);
     if (isHunting(r) || r.state === 'faceplant') chase = Math.max(chase, clamp(1 - (d - 6) / 40, .45, 1));
+    else if (/W$/.test(r.state)) chase = Math.max(chase, .75);
     else if (r.state === 'investigate' || r.state === 'search') tens = Math.max(tens, clamp(1 - d / 45, .2, 1));
     else tens = Math.max(tens, clamp(1 - d / 32, 0, 1) * .8);
   }
@@ -4097,7 +4332,7 @@ const tigers = [];
   const spots = [];
   if (bb) { for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, x = bb.x + Math.cos(a) * 2.8, z = bb.z + Math.sin(a) * 2.8; if (groundH(x, z) > .8 && clearOf(obstacles, x, z, 1.8)) { spots.push({ x, z }); break; } } }
   for (let i = 0; i < 300 && spots.length < 3; i++) {
-    const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 2.4) && clearOf(bushes, x, z, 3) && clearOf(berryBushes, x, z, 2.4) && !nearNest(x, z, 15) && clearOf(spots, x, z, 24));
+    const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 2.4) && clearOf(bushes, x, z, 3) && clearOf(berryBushes, x, z, 2.4) && !nearNest(x, z, 26) && clearOf(spots, x, z, 30));
     if (s) spots.push({ x: s.x, z: s.z });
   }
   for (const s of spots) {
@@ -4279,7 +4514,7 @@ const SHINY_MAT2 = new THREE.MeshStandardMaterial({ color: 0xbff4ff, emissive: 0
 const shinies = [];
 const nestPile = [];
 const Q = { delivered: 0, carrying: null, nagT: 0 };
-const quota = () => 2 + G.day;
+const quota = () => 2 + G.day;   // (v0.12: no longer the daily goal; Doda's meters are)
 
 function makeShinyMesh(i) {
   const m = new THREE.Mesh(SHINY_GEO, i % 3 === 2 ? SHINY_MAT2 : SHINY_MAT);
@@ -4287,35 +4522,54 @@ function makeShinyMesh(i) {
   const o = new THREE.Mesh(SHINY_GEO, outlineMat(.03)); m.add(o);
   scene.add(m); return m;
 }
+/* v0.12: shinies are for Doda now. ~14 lie around the island; each one she gets is replaced somewhere
+   else a little later, so the island never runs dry. Berry items (picked for her) ride the same system. */
+const SHINY_KINDS = ['grove', 'bush', 'meadow', 'tiger', 'rock', 'beach', 'grove', 'far', 'bush', 'meadow', 'rock', 'far', 'beach', 'grove'];
+function placeShiny(kind, taken) {
+  for (let tries = 0; tries < 90; tries++) {
+    let x, z;
+    if (kind === 'tiger' && tigers.length) { const t = tigers[(Math.random() * tigers.length) | 0], a = rand(0, TAU), d = rand(4.6, 6); x = t.hx + Math.cos(a) * d; z = t.hz + Math.sin(a) * d; if (!clearOf(obstacles, x, z, 1.6) || !clearOf(bushes, x, z, 1.5)) continue; }
+    else if (kind === 'grove' && groves.length) { const gr = pick(groves), a = rand(0, TAU), d = rand(1, 7); x = gr.x + Math.cos(a) * d; z = gr.z + Math.sin(a) * d; }
+    else if (kind === 'bush' && bushes.length) { const b = pick(bushes), a = rand(0, TAU); x = b.x + Math.cos(a) * 2.4; z = b.z + Math.sin(a) * 2.4; }
+    else if (kind === 'rock' && rocks.length) { const r = pick(rocks), a = rand(0, TAU), d = r.r + 1.3; x = r.x + Math.cos(a) * d; z = r.z + Math.sin(a) * d; }
+    else if (kind === 'meadow' && meadows.length) { const m = pick(meadows), a = rand(0, TAU), d = rand(0, m.r * .7); x = m.x + Math.cos(a) * d; z = m.z + Math.sin(a) * d; }
+    else { const a = rand(0, TAU), d = kind === 'beach' ? rand(68, 92) : rand(26, 80); x = Math.cos(a) * d; z = Math.sin(a) * d; }
+    const h = groundH(x, z);
+    if (kind === 'beach' ? (h < .12 || h > .7) : h < .6) continue;
+    if (hyp(x, z, NEST.x, NEST.z) < 20 || !clearOf(obstacles, x, z, .9) || !clearOf(taken, x, z, 6)) continue;
+    if (tigers.some(t => hyp(x, z, t.hx, t.hz) < 4.4)) continue;
+    return { x, z };
+  }
+  return null;
+}
+let shinyN = 0;
+function addShiny(p) { shinies.push({ x: p.x, z: p.z, mesh: makeShinyMesh(shinyN++), state: 'ground', ph: rand(0, TAU), glT: rand(0, 1), kind: 'shiny' }); }
 function spawnShinies() {
   for (const s of shinies) { if (s.mesh.parent) s.mesh.parent.remove(s.mesh); }
   shinies.length = 0;
   for (const m of nestPile) scene.remove(m); nestPile.length = 0;
-  Q.delivered = 0; Q.carrying = null;
-  // spread around the island: tucked in groves, beside bushes and rocks, in meadows, on the beach, a couple near cats
-  const n = quota() + 7, kinds = ['grove', 'bush', 'meadow', 'tiger', 'rock', 'beach', 'grove', 'far', 'bush', 'meadow', 'rock', 'tiger', 'beach', 'far', 'grove'];
+  Q.delivered = 0; Q.carrying = null; Q.respawn = []; Q.berries = 0;
   const taken = [];
-  for (let i = 0; i < n; i++) {
-    let p = null; const kind = kinds[i % kinds.length];
-    for (let tries = 0; tries < 80 && !p; tries++) {
-      let x, z;
-      if (kind === 'tiger' && tigers.length) { const t = tigers[(Math.random() * tigers.length) | 0], a = rand(0, TAU), d = rand(4.6, 6); x = t.hx + Math.cos(a) * d; z = t.hz + Math.sin(a) * d; if (!clearOf(obstacles, x, z, 1.6) || !clearOf(bushes, x, z, 1.5)) continue; }
-      else if (kind === 'grove' && groves.length) { const gr = pick(groves), a = rand(0, TAU), d = rand(1, 7); x = gr.x + Math.cos(a) * d; z = gr.z + Math.sin(a) * d; }
-      else if (kind === 'bush' && bushes.length) { const b = pick(bushes), a = rand(0, TAU); x = b.x + Math.cos(a) * 2.4; z = b.z + Math.sin(a) * 2.4; }
-      else if (kind === 'rock' && rocks.length) { const r = pick(rocks), a = rand(0, TAU), d = r.r + 1.3; x = r.x + Math.cos(a) * d; z = r.z + Math.sin(a) * d; }
-      else if (kind === 'meadow' && meadows.length) { const m = pick(meadows), a = rand(0, TAU), d = rand(0, m.r * .7); x = m.x + Math.cos(a) * d; z = m.z + Math.sin(a) * d; }
-      else { const a = rand(0, TAU), d = kind === 'beach' ? rand(52, 70) : rand(20, 60); x = Math.cos(a) * d; z = Math.sin(a) * d; }
-      const h = groundH(x, z);
-      if (kind === 'beach' ? (h < .12 || h > .7) : h < .6) continue;
-      if (hyp(x, z, NEST.x, NEST.z) < 15 || !clearOf(obstacles, x, z, .9) || !clearOf(taken, x, z, 5)) continue;
-      if (tigers.some(t => hyp(x, z, t.hx, t.hz) < 4.4)) continue;
-      p = { x, z };
-    }
-    if (!p) continue;
-    taken.push(p);
-    shinies.push({ x: p.x, z: p.z, mesh: makeShinyMesh(i), state: 'ground', ph: rand(0, TAU), glT: rand(0, 1) });
-  }
+  for (let i = 0; i < 14; i++) { const p = placeShiny(SHINY_KINDS[i % SHINY_KINDS.length], taken); if (p) { taken.push(p); addShiny(p); } }
 }
+function respawnShinies() {
+  if (!Q.respawn || !Q.respawn.length || Q.respawn[0] > G.time) return;
+  Q.respawn.shift();
+  const taken = shinies.filter(s => s.state === 'ground').map(s => ({ x: s.x, z: s.z, r: 0 }));
+  taken.push({ x: D.pos.x, z: D.pos.z, r: 14 });
+  const p = placeShiny(pick(SHINY_KINDS), taken); if (p) addShiny(p);
+}
+/* a berry he picked for Doda (he might eat it on the way) */
+const BERRY_ITEM_GEO = (() => { const b = new Builder(); [[0, 0, 0], [.13, -.04, .05], [-.11, -.05, .06]].forEach(p => { b.add(GEO.sphLo, 0xe5303e, p, .12); b.add(GEO.sphLo, 0xffd0d4, [p[0] - .04, p[1] + .06, p[2] + .05], .03); }); b.add(GEO.sph, 0x5fae3a, [0, .12, -.04], [.12, .02, .17], [0, 0, .3]); return b.bake(); })();
+function pluckBerry(b) {
+  b.ripe = false; b.berries.visible = false; b.regrow = 22; b.wob = 1;
+  const m = new THREE.Mesh(BERRY_ITEM_GEO, toonVC()); m.castShadow = true;
+  const it = { x: D.pos.x, z: D.pos.z, mesh: m, state: 'carried', ph: 0, glT: 9, kind: 'berry' };
+  shinies.push(it); Q.carrying = it; DR.P.beakTip.add(m); m.position.set(0, 0, 0);
+  popup(pick(['one for Doda ♥', 'for her!', 'NOT for him.']), D.pos.x, D.y + 2.3, D.pos.z, 'nom', 1.3); S.chime(0); say('yay', { prio: 3 });
+  D.temptCD = 4; hint('berryCarry');
+}
+const carryingBerry = () => !!(Q.carrying && Q.carrying.kind === 'berry');
 function dropShiny(why) {
   const s = Q.carrying; if (!s) return;
   G.lastDrop = why || 'dropped it!'; G.dropLog = (G.dropLog || []); G.dropLog.push(G.lastDrop);
@@ -4339,31 +4593,19 @@ function updateShinies(dt, t) {
     if (G.mode === 'play' && !Q.carrying && dd < 3.6 && dd > .1 && !(s.noPick > G.time) && ['drown', 'sleep', 'tummy', 'snack', 'tumble'].indexOf(D.state) < 0) { const k = Math.min(1, dt * 4); s.x += (D.pos.x - s.x) * k; s.z += (D.pos.z - s.z) * k; }
     s.mesh.position.set(s.x, groundH(s.x, s.z) + .32 + Math.sin(t * 2 + s.ph) * .08, s.z);
     s.mesh.rotation.y += dt * 1.6; s.mesh.rotation.x = Math.sin(t + s.ph) * .3;
-    s.glT -= dt; if (s.glT <= 0) { s.glT = rand(.5, 1.2); FX.glint(s.x + rand(-.15, .15), gy + .45, s.z + rand(-.15, .15)); if (Math.random() < .5) FX.sparkle(s.x, gy + .2, s.z, 1, .9, .4); }
+    s.glT -= dt; if (s.kind === 'shiny' && s.glT <= 0) { s.glT = rand(.5, 1.2); FX.glint(s.x + rand(-.15, .15), gy + .45, s.z + rand(-.15, .15)); if (Math.random() < .5) FX.sparkle(s.x, gy + .2, s.z, 1, .9, .4); }
     // pick up with his beak
     if (G.mode === 'play' && !Q.carrying && !D.dead && !(s.noPick > G.time) && !(D.hunger > 80 && D.state === 'wander' && nearestRipe(D.pos.x, D.pos.z, 9, G.time)) && ['drown', 'sleep', 'tummy', 'snack', 'tumble'].indexOf(D.state) < 0 && hyp(s.x, s.z, D.pos.x, D.pos.z) < 1.9) {
       Q.carrying = s; s.state = 'carried'; scene.remove(s.mesh); DR.P.beakTip.add(s.mesh);
       s.mesh.position.set(0, 0, 0); s.mesh.scale.set(.8, .6, .8);
-      { const w = pick(['ooh! shiny!', 'MINE.', 'shiny!!']); popup(w, D.pos.x, D.y + 2.3, D.pos.z, 'big', 1.2); S.chime(0); say(w === 'MINE.' ? 'mine' : (w === 'shiny!!' ? 'yay' : 'ooh'), { prio: 3 }); }
+      if (s.kind === 'berry') { popup('got it back!', D.pos.x, D.y + 2.3, D.pos.z, 'nom', 1.1); S.chime(0); D.temptCD = 3; }
+      else { const w = pick(['ooh! shiny!', 'MINE.', 'shiny!!']); popup(w, D.pos.x, D.y + 2.3, D.pos.z, 'big', 1.2); S.chime(0); say(w === 'MINE.' ? 'mine' : (w === 'shiny!!' ? 'yay' : 'ooh'), { prio: 3 }); }
       if (D.oohTarget) D.oohTarget = null;
       hint('shiny');
     }
   }
-  if (Q.carrying) Q.carrying.mesh.rotation.y += dt * 2;
-  // deliver to the nest
-  if (Q.carrying && G.mode === 'play' && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 2.3) {
-    const s = Q.carrying; Q.carrying = null; s.state = 'nest';
-    DR.P.beakTip.remove(s.mesh);
-    const i = Q.delivered, a = i * 2.39996;
-    s.mesh.position.set(NEST.x + Math.cos(a) * (.55 + (i % 3) * .18), NEST.y + .42 + Math.floor(i / 5) * .12, NEST.z + Math.sin(a) * (.55 + (i % 3) * .18));
-    s.mesh.scale.set(1, .75, 1); scene.add(s.mesh); nestPile.push(s.mesh);
-    Q.delivered++; RUN.shiny = (RUN.shiny || 0) + 1;
-    S.chime(1); say('woohoo', { prio: 3 }); FX.hearts(NEST.x, NEST.y + 1, NEST.z);
-    for (let k = 0; k < 14; k++) FX.sparkle(NEST.x, NEST.y + .3, NEST.z, 1, .85, .35);
-    const left = quota() - Q.delivered;
-    popup(left > 0 ? left + ' more!' : 'NEST COMPLETE!', NEST.x, NEST.y + 2.4, NEST.z, left > 0 ? 'big' : 'huge', 1.5);
-    if (left === 0) { showBanner('NEST READY!', true); S.jingle(); }
-  }
+  if (Q.carrying && Q.carrying.kind === 'shiny') Q.carrying.mesh.rotation.y += dt * 2;
+  respawnShinies();
 }
 function shinyIcon() { return '<path d="M20 5l11 10-11 20L9 15z" fill="#ffd86b" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/><path d="M9 15h22M16 15l4 20 4-20M14 5.5l2 9.5M26 5.5l-2 9.5" fill="none" stroke="#24170e" stroke-width="1.4" stroke-linejoin="round"/>'; }
 function nearestGroundShiny() { let best = null, bd = 1e9; for (const s of shinies) { if (s.state !== 'ground') continue; const d = hyp(s.x, s.z, D.pos.x, D.pos.z); if (d < bd) { bd = d; best = s; } } return best; }
@@ -4449,9 +4691,10 @@ function instanced(builder, mat, list, scaleFn) {
   const phone = window.matchMedia && matchMedia('(pointer:coarse)').matches;
   // ferns hug tree trunks and grove edges
   const fb = new Builder();
-  for (let k = 0; k < 7; k++) { const a = k / 7 * TAU; fb.add(GEO.sphLo, k % 2 ? 0x3e8a35 : 0x4f9c3f, [Math.sin(a) * .45, .28, Math.cos(a) * .45], [.13, .05, .55], [-.5, a, 0]); }
+  const LEAF = new THREE.IcosahedronGeometry(1, 0);   // v0.12: 20-triangle leaves (was 216 each; ferns were ~1M triangles on the bigger island)
+  for (let k = 0; k < 7; k++) { const a = k / 7 * TAU; fb.add(LEAF, k % 2 ? 0x3e8a35 : 0x4f9c3f, [Math.sin(a) * .45, .28, Math.cos(a) * .45], [.13, .05, .55], [-.5, a, 0]); }
   const ferns = [];
-  for (const t of trees) for (let k = 0; k < (t.kind === 'palm' ? 1 : 3); k++) { const a = sr(0, TAU), d = sr(.9, 2.4), x = t.x + Math.cos(a) * d, z = t.z + Math.sin(a) * d, h = groundH(x, z); if (h > .7) ferns.push({ x, y: h, z, ry: sr(0, TAU), s: sr(.8, 1.4) }); }
+  for (const t of trees) for (let k = 0; k < (t.kind === 'palm' || t.kind === 'fern' ? 1 : 2); k++) { const a = sr(0, TAU), d = sr(.9, 2.4), x = t.x + Math.cos(a) * d, z = t.z + Math.sin(a) * d, h = groundH(x, z); if (h > .7) ferns.push({ x, y: h, z, ry: sr(0, TAU), s: sr(.8, 1.4) }); }
   for (let i = 0; i < 60; i++) { const s = spot((x, z, h) => h > 1 && clearOf(obstacles, x, z, 1.2)); if (s) ferns.push({ x: s.x, y: s.h, z: s.z, ry: sr(0, TAU), s: sr(.7, 1.2) }); }
   instanced(fb, toonVC(), ferns);
   // mushrooms in the groves
@@ -4617,6 +4860,7 @@ const ICON = {
   rex: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="26" rx="7" ry="8" fill="#24170e"/><ellipse cx="10" cy="13" rx="3.5" ry="7" transform="rotate(-25 10 13)" fill="#24170e"/><ellipse cx="20" cy="9" rx="3.5" ry="7.5" fill="#24170e"/><ellipse cx="30" cy="13" rx="3.5" ry="7" transform="rotate(25 30 13)" fill="#24170e"/></svg>',
   nest: () => '<svg viewBox="0 0 40 40"><ellipse cx="20" cy="26" rx="15" ry="7" fill="#8a6238" stroke="#24170e" stroke-width="2.5"/><ellipse cx="20" cy="18" rx="6" ry="8" fill="#f6efdc" stroke="#24170e" stroke-width="2.5"/></svg>',
   sun: () => '<svg viewBox="0 0 40 40"><path d="M7 27a13 13 0 0 1 26 0z" fill="#ff8a4c" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 31h32M20 6v4M8 12l3 3M32 12l-3 3" stroke="#24170e" stroke-width="2.5" stroke-linecap="round"/></svg>',
+  heart: () => '<svg viewBox="0 0 40 40"><path d="M20 33C8 25 5 18 7 13c2-5 9-6 13 0 4-6 11-5 13 0 2 5-1 12-13 20z" fill="#ff5f8f" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/></svg>',
   warn: () => '<svg viewBox="0 0 40 40"><path d="M20 5l16 29H4z" fill="#ffc23a" stroke="#24170e" stroke-width="2.5" stroke-linejoin="round"/><path d="M20 15v9" stroke="#24170e" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="29" r="2" fill="#24170e"/></svg>',
   wave: () => '<svg viewBox="0 0 40 40"><path d="M4 22c4-5 8-5 12 0s8 5 12 0 6-4 8-2M4 30c4-5 8-5 12 0s8 5 12 0 6-4 8-2" fill="none" stroke="#2fa9c2" stroke-width="3.5" stroke-linecap="round"/></svg>'
 };
@@ -4625,23 +4869,22 @@ const li = (k, b, s, cls) => `<li${cls ? ' class="' + cls + '"' : ''}>${gi(k)}<s
 
 /* the four jobs. Same words everywhere: menu, intro card, how-to-play */
 function goalsHTML(day) {
-  const q = 2 + day;
-  return li('shiny', `Bring ${q} shinies to his nest`, "He can't sleep without them.") +
-    li('berry', 'Keep him fed', 'Berries. Not too many.') +
-    li('rex', "Don't let the T-rex see him", 'Hide in bushes. Juke sideways.', 'rexLine') +
-    li('sun', 'Get him home by sunset', 'Then he sleeps. Day survived.');
+  return li('heart', 'Keep Doda on the egg', 'Bring her shinies. She gets bored fast.') +
+    li('berry', 'Feed them both', 'He eats at bushes. Carry berries to her.') +
+    li('rex', 'Stay out of sight', 'Trees and bushes block its view.', 'rexLine') +
+    li('sun', 'Both in the nest by sunset', 'Survive 3 days and the egg hatches.');
 }
 $('howGoals').innerHTML = goalsHTML(1);
 
 /* ---------------- intro mission card ---------------- */
 function showMission(day) {
   const m = $('mission'); let html;
-  if (day === 1) html = '<div class="mGoal">Keep the dodo alive.</div><ul class="mList">' + goalsHTML(1) + '</ul>';
+  if (day === 1) html = '<div class="mGoal">The last two dodos on Earth.</div><ul class="mList">' + goalsHTML(1) + '</ul>';
   else {
     const twist = day === 2 ? li('rex', 'The T-rex is faster now', 'And it can smell his farts.', 'rexLine')
       : day === 3 ? li('rex', 'There are two T-rexes', 'The new one is small, fast, and turns better.', 'rexLine')
         : li('warn', 'Everything is faster', 'He is not.', 'rexLine');
-    html = '<div class="mGoal">Same job. Worse island.</div><ul class="mList">' + li('shiny', `Bring ${2 + day} shinies to his nest`, "He still can't sleep without them.") + twist + li('sun', 'Get him home by sunset', '') + '</ul>';
+    html = '<div class="mGoal">' + (day === 3 ? 'Last day. The egg is wobbling.' : 'Same job. Worse island.') + '</div><ul class="mList">' + li('heart', 'Keep Doda on the egg', 'She gets bored even faster today.') + twist + li('sun', 'Both in the nest by sunset', day === 3 ? 'Then it hatches.' : '') + '</ul>';
   }
   m.innerHTML = html; m.classList.remove('fly'); m.hidden = false;
 }
@@ -4653,23 +4896,24 @@ function hideMission(fly) {
 function missionRoar() { const l = document.querySelector('#mission .rexLine'); if (l) { l.classList.remove('shake'); void l.offsetWidth; l.classList.add('shake'); } }
 
 /* ---------------- live objective tracker ---------------- */
-const shin = n => n === 1 ? 'shiny' : 'shinies';
 function currentObjective() {
-  const q = quota(), need = Math.max(0, q - Q.delivered), th = nearestThreat();
-  const willComplete = Q.carrying && need === 1;
+  const th = nearestThreat(), off = wifeOff(), berry = carryingBerry();
   if (D.state === 'drown') return ['wave', 'Push him back to the beach!', 1];
-  if (th.r && isHunting(th.r) && th.d < 30) return ['rex', 'Escape! Go sideways, or dive into a bush', 1];
+  if (rexes.some(r => r.active && /W$/.test(r.state))) return ['rex', "It's going for Doda! HONK near it to distract it", 1];
+  if (th.r && isHunting(th.r) && th.d < 30) return ['rex', 'Escape! Go sideways, or into the trees', 1];
   if (awakeTiger()) return ['rex', 'A cat woke up. RUN!', 1];
-  if (G.night || G.dusk) {
-    const tag = G.night ? 'Dark!' : 'Sunset!';
-    if (need === 0) return ['nest', tag + ' Get him home to bed', 1];
-    if (willComplete || Q.carrying) return ['nest', tag + ' Rush that shiny home', 1];
-    return ['shiny', `${tag} Find ${need} more ${shin(need)}, fast`, 1];
+  if (D.state === 'tempted') return ['berry', "HOLD HUSH! That's Doda's berry", 1];
+  if (off) {
+    if (W.warm < 45) return ['heart', W.state === 'follow' ? 'Egg is cooling! Lead her home NOW' : 'Egg is cooling! Get Doda back on it', 1];
+    if (W.state === 'follow') return ['heart', 'She is following! Lead her home', 1];
+    return Q.carrying ? ['heart', 'Walk past Doda. She will follow it home', 1] : ['shiny', 'Doda left! Grab a shiny to lure her home', 1];
   }
-  if (D.hunger > 72) return Q.carrying ? ['nest', "Hungry! Drop the shiny at the nest, then eat", D.hunger > 88] : ['berry', "He's starving. Lead him to berries", D.hunger > 88];
-  if (Q.carrying) return ['nest', 'Take the shiny home to his nest', 0];
-  if (need > 0) return ['shiny', Q.delivered === 0 ? 'Find a shiny for his nest' : `Find ${need} more ${shin(need)}`, 0];
-  return ['sun', 'Nest full! Keep him safe till sunset', 0];
+  if (G.night || G.dusk) return ['nest', (G.night ? 'Dark!' : 'Sunset!') + ' Get him home to bed', 1];
+  if (D.hunger > 72) return Q.carrying ? ['nest', 'He is starving! Deliver that, then eat', D.hunger > 88] : ['berry', "He's starving. Find berries", D.hunger > 88];
+  if (Q.carrying) return ['heart', berry ? "Bring the berry to Doda (don't let him eat it)" : 'Bring the shiny to Doda', 0];
+  if (W.belly < 40) return ['berry', 'Doda is hungry: pick her a berry', W.belly < 20];
+  if (W.attn < 45) return ['shiny', 'Doda is getting bored: find a shiny', W.attn < 20];
+  return ['shiny', W.attn < 80 ? 'Find shinies for Doda' : 'Doda is happy. Stock up on shinies', 0];
 }
 const OBJ = { sig: '', kind: '', pingT: 0 };
 function updateObjective(dtR) {
@@ -4748,20 +4992,301 @@ $('deathMenuBtn').addEventListener('click', () => { S.pop(); toTitle(); });
 
 function toTitle() {
   if (A.on && A.ctx.state !== 'running') A.ctx.resume().catch(() => { });
-  ['pause', 'death', 'dayCard', 'howPanel', 'setPanel'].forEach(id => $(id).hidden = true); UI.open = UI.from = null;
+  ['pause', 'death', 'dayCard', 'winCard', 'howPanel', 'setPanel'].forEach(id => $(id).hidden = true); hideBaby(); UI.open = UI.from = null;
   $('hud').hidden = true; $('rack').hidden = true; $('bubble').hidden = true; $('pauseBtn').hidden = true; $('camHint').hidden = true; hideToast();
   hideMission(false); $('introCap').classList.remove('on'); $('introDay').classList.remove('on'); $('skip').hidden = true;
   document.body.classList.remove('cine', 'hungry', 'starving', 'struggle');
   stageEl.style.transition = 'none'; stageEl.style.filter = '';
   for (const p of pops) p.el.remove(); pops.length = 0;
   for (const e of indEls) e.style.display = 'none';
-  G.slowT = 0; G.ts = 1; G.killer = null; G.tigerKiller = null; G.deathEv = null;
+  G.slowT = 0; G.ts = 1; G.killer = null; G.tigerKiller = null; G.wifeKiller = null; G.deathEv = null;
   resetWorld(); startDay(true);
   rexes[0].state = 'idle'; rexes[0].graceT = 9999;
   D.pos.set(NEST.x, NEST.y, NEST.z + 1.6);
   G.mode = 'title'; OBJ.sig = OBJ.kind = '';
   $('bestLine').textContent = bestLine(); $('title').hidden = false; $('startBtn').focus();
 }
+
+/* ---------------- you won ---------------- */
+function showWin() {
+  if (G.mode !== 'daycard' || !G.hatching) return;
+  saveBest();
+  $('winTxt').textContent = 'Three days. One egg. ' + (RUN.ateHers ? `He ate ${RUN.ateHers} of her berries and still got away with it.` : 'He somehow kept the last two dodos alive.') + ' The species continues, against all advice.';
+  $('winStats').innerHTML = `<b>${fmt(G.totalTime)}</b> survived · <b>${RUN.shiny || 0}</b> shinies for Doda · <b>${RUN.berriesGiven || 0}</b> berries delivered · <b>${RUN.fart}</b> farts · <b>${RUN.near}</b> near misses`;
+  $('winCard').hidden = false; $('winAgain').focus();
+}
+$('winAgain').addEventListener('click', () => { S.pop(); newRun(); });
+$('winMenu').addEventListener('click', () => { S.pop(); toTitle(); });
+
+/* =====================================================================
+   5f_wife (v0.12): DODA. The last other dodo on Earth, sitting on the last egg.
+   - She sits on the nest in the home grove, where nothing big can get her.
+   - ATTENTION drains. Shinies refill it. At zero she gets bored and wanders off to stare at sparkly rocks.
+   - BELLY drains. Berries (carried to her one at a time) refill it. At zero she goes looking for food.
+   - Off the nest, the EGG cools. A cold egg ends the run.
+   - Carry anything near her and she follows it home, mesmerised (the lure).
+   - Outside the grove the T-rex can see her and will go for her. Telegraphed: it roars, stalks, winds up
+     (red lane), lunges. HONK nearby and it comes after him instead. That's the hero move.
+   - Survive 3 days with both of them in the nest at sunset: the egg hatches. You win.
+   ===================================================================== */
+const WR = buildDodo({ grey: 0xb39aa6, greyD: 0x8b7280, chest: 0xfbefe8, face: 0xd2bcc6, wife: true });
+WR.root.scale.setScalar(.9);
+const W = { x: NEST.x, z: NEST.z, y: NEST.y, heading: 0, state: 'sit', stT: 0, stAge: 0, attn: 80, belly: 75, warm: 100, speed: 0, tx: 0, tz: 0,
+  target: null, walk: 0, look: 0, sayT: 3, popT: 2, lastSeenBy: null, panicT: 0, blinkT: 2, hatch: 0 };
+const WIFE = {
+  attnDrain: () => [1.0, 1.2, 1.4][Math.min(2, G.day - 1)] * (G.night ? 1.3 : 1),
+  bellyDrain: () => [.45, .55, .65][Math.min(2, G.day - 1)],
+  SHINY: 50, BERRY: 45, COOL: 1.4, WARM: 3
+};
+const wifeOff = () => W.state !== 'sit' && W.state !== 'sleep' && W.state !== 'dead';
+const wifeExposed = () => wifeOff() && !inSanct(W.x, W.z);
+function wSet(s, dur) { if (W.state !== s) W.stAge = 0; W.state = s; W.stT = dur || 0; }
+function wPop(txt, cls, life) { popup(txt, W.x, W.y + 1.9, W.z, cls || 'small', life || 1.3); }
+function resetWife(first) {
+  Object.assign(W, { x: NEST.x, z: NEST.z, y: NEST.y, heading: 0, speed: 0, target: null, panicT: 0, hatch: 0 });
+  wSet('sit');
+  W.attn = first ? 80 : Math.max(W.attn, 70); W.belly = first ? 75 : Math.max(W.belly, 65); W.warm = 100; W.graceT = first ? 25 : 12;
+  WR.root.visible = true; if (NEST_EGG.mesh) { NEST_EGG.mesh.visible = true; NEST_EGG.mesh.material.color.setHex(0xf6efdc); }
+}
+
+/* ---- what she does ---- */
+function wifeTarget(kind) {
+  if (kind === 'food') { const b = nearestRipe(W.x, W.z, 70, G.time); if (b) return { x: b.x, z: b.z, bush: b }; }
+  const c = nearestOf(crystals.filter(c => hyp(c.x, c.z, NEST.x, NEST.z) < 60), W.x, W.z, 60);
+  if (c && Math.random() < .7) return { x: c.x, z: c.z, crystal: c };
+  for (let i = 0; i < 20; i++) { const a = rand(0, TAU), d = rand(SANCT_R + 6, SANCT_R + 26), x = NEST.x + Math.cos(a) * d, z = NEST.z + Math.sin(a) * d; if (groundH(x, z) > .6) return { x, z }; }
+  return { x: NEST.x + 18, z: NEST.z };
+}
+function wifeMove(gx, gz, spd, dt) {
+  const dx = gx - W.x, dz = gz - W.z, d = Math.hypot(dx, dz);
+  const want = d < .3 ? 0 : spd * Math.min(1, d / 1.2);
+  W.speed += (want - W.speed) * Math.min(1, dt * 5);
+  if (d > .05) W.heading += clamp(angDiff(W.heading, Math.atan2(dx, dz)), -7 * dt, 7 * dt);
+  const nx = W.x + Math.sin(W.heading) * W.speed * dt, nz = W.z + Math.cos(W.heading) * W.speed * dt;
+  if (groundH(nx, nz) < .15) { W.speed *= .5; return d; }
+  const p = { x: nx, z: nz }; collide(p, .45, obstacles); W.x = p.x; W.z = p.z; W.y = groundH(W.x, W.z);
+  W.walk += W.speed * dt * 2.6;
+  return d;
+}
+function updateWife(dt) {
+  if (W.state === 'dead' || W.state === 'sleep') return;
+  W.stT -= dt; W.stAge += dt; W.sayT -= dt; W.popT -= dt; W.graceT -= dt;
+  W.belly = Math.max(0, W.belly - WIFE.bellyDrain() * dt);
+  const onNest = W.state === 'sit';
+  if (onNest) { W.attn = Math.max(0, W.attn - WIFE.attnDrain() * dt * (W.graceT > 0 ? .3 : 1)); W.warm = Math.min(100, W.warm + WIFE.WARM * dt); }
+  else {
+    const was = W.warm; W.warm = Math.max(0, W.warm - WIFE.COOL * dt); if (W.warm <= 0) { killWife('egg'); return; }
+    if (was > 45 && W.warm <= 45) { showBanner('THE EGG IS COOLING!'); S.sting(); } if (was > 18 && W.warm <= 18) { showBanner('EGG ALMOST COLD!'); S.sting(); }
+  }
+  const dD = hyp(W.x, W.z, D.pos.x, D.pos.z), lure = !!Q.carrying && !D.dead && dD < 7 && D.state !== 'drown';
+  if (NEST_EGG.mesh) NEST_EGG.mesh.material.color.setRGB(lerp(.72, .965, W.warm / 100), lerp(.82, .937, W.warm / 100), lerp(.95, .863, W.warm / 100));
+
+  switch (W.state) {
+    case 'sit': {
+      W.x = NEST.x; W.z = NEST.z; W.y = NEST.y; W.speed = 0;
+      if (W.attn < 30 && W.popT <= 0) { W.popT = rand(5, 8); wPop(pick(['*sigh*', 'bored…', 'so… bored', 'is there anything shiny?']), 'small', 1.6); }
+      else if (W.belly < 25 && W.popT <= 0) { W.popT = rand(5, 8); wPop(pick(['*grumble*', 'hungry…', 'berry?']), 'small', 1.6); }
+      if (W.graceT <= 0 && (W.attn <= 0 || W.belly <= 0)) {
+        W.why = W.belly <= 0 ? 'food' : 'bored'; wSet('getup', 1.1); say('huh', { prio: 3, rate: 1.35 });
+        wPop(W.why === 'food' ? 'I\'m getting a snack.' : 'BORED. Going for a walk.', 'big', 1.8); showBanner('DODA LEFT THE NEST!'); S.sting(); hint('wifeLeft');
+      }
+      break;
+    }
+    case 'getup': {
+      if (W.stT <= 0) { W.target = wifeTarget(W.why); wSet('wander', 30); }
+      break;
+    }
+    case 'wander': {
+      if (lure) { wSet('follow'); wPop(Q.carrying.kind === 'berry' ? 'ooh, a berry ♥' : 'ooh… shiny ♥', 'nom', 1.4); say('ooh', { prio: 2, rate: 1.3 }); break; }
+      const t = W.target || (W.target = wifeTarget(W.why));
+      const d = wifeMove(t.x, t.z, 1.35, dt);
+      if (d < 1.6) {
+        if (t.bush && t.bush.ripe) { t.bush.ripe = false; t.bush.berries.visible = false; t.bush.regrow = 25; W.belly = Math.min(100, W.belly + 55); wPop('nom nom', 'nom', 1.3); S.munch && S.munch(); W.why = 'bored'; W.target = null; }
+        else if (t.crystal) { wSet('stare', 999); wPop('ooooh. sparkly.', 'small blue', 1.6); }
+        else W.target = wifeTarget(W.why);
+      }
+      break;
+    }
+    case 'stare': {
+      W.speed = 0; if (W.target) W.heading += clamp(angDiff(W.heading, Math.atan2(W.target.x - W.x, W.target.z - W.z)), -3 * dt, 3 * dt);
+      if (lure) { wSet('follow'); wPop('…a BETTER shiny ♥', 'nom', 1.4); break; }
+      if (W.popT <= 0) { W.popT = rand(6, 10); wPop(pick(['so pretty', 'mine', '…']), 'small blue', 1.4); }
+      break;
+    }
+    case 'follow': {
+      if (!lure) { if (dD > 9 || !Q.carrying) { wSet('wander', 20); W.target = { x: W.x + rand(-2, 2), z: W.z + rand(-2, 2) }; if (W.popT <= 0) { W.popT = 3; wPop('hmph.', 'small', 1.2); } } }
+      const bx = D.pos.x - Math.sin(D.heading) * 1.7, bz = D.pos.z - Math.cos(D.heading) * 1.7;
+      wifeMove(bx, bz, dD > 4 ? 4.6 : 3.2, dt);
+      if (hyp(W.x, W.z, NEST.x, NEST.z) < 2.6) { wSet('sit'); W.graceT = 6; W.attn = Math.max(W.attn, 25); W.belly = Math.max(W.belly, 15); wPop('home ♥', 'nom', 1.3); FX.hearts(NEST.x, NEST.y + 1.2, NEST.z); S.chime(1); }
+      break;
+    }
+    case 'panic': {
+      // she saw teeth: frozen, then a mad waddle for home
+      if (W.stAge < 1.1) { W.speed *= .8; break; }
+      if (lure) { wSet('follow'); break; }
+      wifeMove(NEST.x, NEST.z, 4.2, dt);
+      if (hyp(W.x, W.z, NEST.x, NEST.z) < 2.6) { wSet('sit'); W.graceT = 6; W.attn = Math.max(W.attn, 15); W.belly = Math.max(W.belly, 10); wPop('phew', 'small', 1.2); }
+      break;
+    }
+  }
+  // gifts: he walks up to her on the nest with something in his beak
+  if (W.state === 'sit' && Q.carrying && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 2.7 && !D.dead) giveToWife();
+}
+function giveToWife() {
+  const it = Q.carrying; Q.carrying = null; DR.P.beakTip.remove(it.mesh);
+  if (it.kind === 'berry') {
+    shinies.splice(shinies.indexOf(it), 1); W.belly = Math.min(100, W.belly + WIFE.BERRY); Q.berries++; RUN.berriesGiven = (RUN.berriesGiven || 0) + 1;
+    wPop(pick(['nom! ♥', 'my hero', 'delicious ♥']), 'nom', 1.4); S.chomp(.4);
+  } else {
+    it.state = 'nest'; const i = Q.delivered, a = i * 2.39996;
+    it.mesh.position.set(NEST.x + Math.cos(a) * (1.0 + (i % 2) * .2), NEST.y + .42, NEST.z + Math.sin(a) * (1.0 + (i % 2) * .2)); it.mesh.scale.set(.9, .7, .9);
+    scene.add(it.mesh); nestPile.push(it.mesh); if (nestPile.length > 10) scene.remove(nestPile.shift());
+    W.attn = Math.min(100, W.attn + WIFE.SHINY); Q.delivered++; RUN.shiny = (RUN.shiny || 0) + 1;
+    Q.respawn.push(G.time + rand(12, 20));
+    wPop(pick(['SHINY! ♥', 'for ME?!', 'ooh ♥ ♥', 'he remembered!']), 'big', 1.5);
+    for (let k = 0; k < 14; k++) FX.sparkle(NEST.x, NEST.y + .3, NEST.z, 1, .85, .35);
+  }
+  S.chime(1); say('woohoo', { prio: 3 }); FX.hearts(NEST.x, NEST.y + 1.2, NEST.z);
+}
+
+/* ---- the T-rex and Doda ---- */
+function rexSeesWife(r, P) {
+  if (!wifeExposed()) return false;
+  const d = hyp(r.x, r.z, W.x, W.z); if (d > P.sight * .9) return false;
+  if (d > 5 && losBlock(r.x, r.z, W.x, W.z) + concealment(W.x, W.z, W.speed, false) >= 1) return false;
+  return d < 10 || Math.abs(angDiff(r.heading, Math.atan2(W.x - r.x, W.z - r.z))) < 1.2;
+}
+/* called from updateRex; returns true when it handled this frame */
+function rexWifeBrain(r, dt, P, seesHim) {
+  const passive = ['roam', 'scan', 'investigate', 'search', 'sniffBush'].indexOf(r.state) >= 0;
+  if (passive && G.mode === 'play' && r.graceT <= 0 && rexSeesWife(r, P)) {
+    setR(r, 'alertW', 1.1); r.roared = false; r.wLastSeen = G.time;
+    if (W.state !== 'panic') { wSet('panic'); wPop('EEK!', 'big red', 1.2); say('scream', { prio: 6, rate: 1.4 }); }
+    showBanner('IT SEES DODA!'); hint('wifeHunted');
+  }
+  if (r.state !== 'alertW' && r.state !== 'stalkW' && r.state !== 'windW' && r.state !== 'lungeW') return false;
+  if (!wifeExposed() && r.state !== 'lungeW') { setR(r, 'search', 4); r.cx = W.x; r.cz = W.z; r.wx = r.cx; r.wz = r.cz; const hp = rexHeadWorld(r); popup('?', hp.x, hp.y + 1.4, hp.z, 'big', 1.2); return true; }
+  // he's closer and it can see him: he's the snack now
+  const dHim = hyp(r.x, r.z, D.pos.x, D.pos.z), dHer = hyp(r.x, r.z, W.x, W.z);
+  if (seesHim && dHim < dHer && r.state !== 'lungeW') { setR(r, 'alert', .6); r.roared = false; return true; }
+  const sw = rexSeesWife(r, P); if (sw) r.wLastSeen = G.time;
+  const m = rexMouth(r), md = hyp(m.x, m.z, W.x, W.z);
+  switch (r.state) {
+    case 'alertW': {
+      r.speed *= Math.exp(-6 * dt); advanceRex(r, dt);
+      r.heading += clamp(angDiff(r.heading, Math.atan2(W.x - r.x, W.z - r.z)), -4 * dt, 4 * dt);
+      if (!r.roared && r.stAge > .3) { r.roared = true; r.lastRoar = G.time; S.roar(clamp(1 - dHim / 95, .15, 1), clamp((r.x - camera.position.x) / 30, -1, 1), r.id === 1); const hp = rexHeadWorld(r); popup('ROOAAARR!', hp.x, hp.y + 1.5, hp.z, 'huge', 1.6, .6); G.shake = Math.max(G.shake, .5); }
+      if (r.stT <= 0) setR(r, 'stalkW', 0);
+      break;
+    }
+    case 'stalkW': {
+      if (G.time - r.wLastSeen > 3) { setR(r, 'search', 5); r.cx = W.x; r.cz = W.z; r.wx = r.cx; r.wz = r.cz; break; }
+      rexMove(r, W.x, W.z, P.chase * .82, P.turn, dt);
+      if (md < 6 && r.lungeCD <= 0 && sw) { setR(r, 'windW', .7); r.lungeMin = 99; S.bark(clamp(1 - dHim / 40, .3, 1), 0, r.id === 1); }
+      break;
+    }
+    case 'windW': {
+      r.speed *= Math.exp(-7 * dt); advanceRex(r, dt);
+      if (r.stAge < .25) { r.lungeDir = r.heading + clamp(angDiff(r.heading, Math.atan2(W.x - r.x, W.z - r.z)), -.7, .7); r.heading += clamp(angDiff(r.heading, r.lungeDir), -3 * dt, 3 * dt); }
+      showLane(r, r.stAge < .25 ? .55 : 1);
+      if (r.stT <= 0) { r.heading = r.lungeDir; setR(r, 'lungeW', .42); r.speed = 15; }
+      break;
+    }
+    case 'lungeW': {
+      showLane(r, .8); advanceRex(r, dt);
+      if (md < 1.25 && wifeOff()) { killWife('eaten', r); return true; }
+      if (r.stT <= 0) { S.chomp(.7); r.speed = 5; r.lungeCD = 2.2; setR(r, 'stalkW', 0); wPop(pick(['MISSED HER!', 'EEEK!']), 'big', 1.2); }
+      break;
+    }
+  }
+  return true;
+}
+/* a honk is a dare: anything hunting her turns on him */
+function honkDecoy(x, z) {
+  for (const r of rexes) if (r.active && (r.state === 'stalkW' || r.state === 'alertW' || r.state === 'windW') && hyp(r.x, r.z, x, z) < 30) {
+    r.tx = x; r.tz = z; r.sniff = false; setR(r, 'investigate', 20); const hp = rexHeadWorld(r); popup('?!', hp.x, hp.y + 1.6, hp.z, 'big red', 1.2); showBanner('OVER HERE!', true);
+  }
+}
+
+/* ---- losing her ---- */
+function killWife(kind, r) {
+  if (D.dead) return;
+  D.dead = true; D.deadT = 0; D.deathKind = kind === 'egg' ? 'egg' : 'wife'; D.stateAtDeath = D.state;
+  G.mode = 'dying'; G.deathT = 0; G.deathKind = D.deathKind; G.killer = null; G.tigerKiller = null; G.wifeKiller = r || null; G.captured = false; G.deathEv = null;
+  G.captureAt = kind === 'egg' ? 1.2 : 1.0;
+  if (r) { setR(r, 'eat', 9); r.speed = 0; G.ts = .25; G.slowT = .8; S.chomp(1.1); say('scream', { prio: 9, rate: 1.4 }); G.shake = 1; flash(.6); FX.feathers(W.x, W.y + .8, W.z, 34, 1.3); const m = rexMouth(r); popup('CHOMP!', m.x, m.y + 3.2, m.z, 'huge', 1.4, .5); }
+  else { S.thud(); popup('…', NEST.x, NEST.y + 1.6, NEST.z, 'big blue', 2); }
+  W.state = 'dead';
+  D.cause = kind === 'egg' ? pick(['The egg got cold. Doda was busy staring at a rock.', 'Nobody sat on the egg. Turns out that matters.', 'Cold egg. Last one on Earth. No pressure.'])
+    : pick(['Doda wandered off to look at something sparkly. The T-rex found her first.', 'She just wanted to see the shiny rock.', 'Left the nest for a crystal. Did not come back.', 'He was busy. She was bored. It was hungry.']);
+  document.body.classList.add('cine'); hideToast();
+}
+function wifeDyingTick(T, dtR) {
+  const r = G.wifeKiller;
+  if (r) {
+    const m = rexMouth(r);
+    if (T < 1.6) { W.x = m.x; W.z = m.z; W.y = m.y - 1.0; WR.root.rotation.z = Math.sin(T * 30) * .6; if (Math.random() < dtR * 8) FX.feathers(m.x, m.y - .6, m.z, 4, 1.2); }
+    else if (WR.root.visible) { WR.root.visible = false; S.chomp(1.2); G.shake = 1; flash(.3); FX.feathers(m.x, m.y + .3, m.z, 26, 1.5); popup('GULP', m.x, m.y + 2.6, m.z, 'huge', 1.3, .4); }
+  } else {
+    // the egg: a sad little wobble, then nothing
+    if (NEST_EGG.mesh) NEST_EGG.mesh.rotation.z = Math.sin(T * 9) * .12 * Math.max(0, 1 - T / 2);
+  }
+}
+
+/* ---- animation ---- */
+function animWife(dt, t) {
+  const R = WR, P = R.P, st = W.state;
+  if (st === 'dead' && !G.wifeKiller) { R.root.visible = false; return; }
+  R.root.position.set(W.x, W.y, W.z); if (st !== 'dead') R.root.rotation.z = 0;
+  R.root.rotation.y = W.heading;
+  const sitting = st === 'sit' || st === 'sleep';
+  if (st === 'watch') { W.speed = 0; }
+  const mv = clamp(W.speed / 3, 0, 1), ph = W.walk * Math.PI;
+  R.bob.position.y = sitting ? -.42 + Math.sin(t * 1.6) * .015 : Math.abs(Math.sin(ph)) * .07 * mv;
+  R.tilt.rotation.z = sitting ? 0 : Math.sin(ph) * .12 * mv;
+  R.tilt.rotation.x = sitting ? 0 : .08 * mv;
+  P.legs.forEach((l, i) => { l.visible = !sitting; l.rotation.x = Math.sin(ph + i * Math.PI) * .75 * mv; });
+  // looks at him when he's near, at her sparkly rock when staring, droops when bored
+  let hy = Math.sin(t * .4 + 2) * .5, hp = 0;
+  const dD = hyp(W.x, W.z, D.pos.x, D.pos.z);
+  if (st === 'stare' && W.target) { hy = angDiff(W.heading, Math.atan2(W.target.x - W.x, W.target.z - W.z)); hp = .25; }
+  else if (dD < 9 && !D.dead) { hy = clamp(angDiff(W.heading, Math.atan2(D.pos.x - W.x, D.pos.z - W.z)), -1.2, 1.2); hp = -.1; }
+  if (sitting && W.attn < 30) { hp = .35 + Math.sin(t * .7) * .1; hy *= .4; }
+  if (st === 'sleep') { hp = .55; hy = .3; }
+  W.look += (hy - W.look) * Math.min(1, dt * 4);
+  P.neck.rotation.y = W.look * .5; P.head.rotation.y = W.look * .5; P.neck.rotation.x = hp * .5; P.head.rotation.x = hp * .6;
+  const flap = st === 'panic' ? 1.4 + Math.sin(t * 30) * .6 : (st === 'follow' ? .3 + Math.sin(t * 9) * .2 : 0);
+  P.wingL.rotation.z = -flap; P.wingR.rotation.z = flap;
+  P.jaw.rotation.x = st === 'panic' ? .5 : 0;
+  W.blinkT -= dt; const bl = W.blinkT < .12 ? .1 : 1; if (W.blinkT < 0) W.blinkT = rand(2, 5);
+  P.eyes.forEach(e => { e.g.scale.y = st === 'sleep' ? .1 : bl; });
+  if (sitting && Math.random() < dt * .25 && st === 'sit') P.tail.rotation.y = rand(-.4, .4);
+}
+
+/* ---- the hatch (end of day 3) ---- */
+let BABY = null;
+function startHatch() {
+  G.hatching = true; G.hatchT = 0;
+  if (!BABY) { BABY = buildDodo({ grey: 0xc7cdd6, greyD: 0xa9b1bd, chest: 0xffffff, face: 0xe2e6ee }); }
+  BABY.root.visible = false; BABY.root.scale.setScalar(.42);
+  // everyone gathers round the egg
+  W.state = 'watch'; W.x = NEST.x + 1.5; W.z = NEST.z - .3; W.y = NEST.y; W.heading = Math.atan2(NEST.x - W.x, NEST.z - W.z);
+  setS('sleep', 999, 'Watching the egg.'); think(null); D.pos.set(NEST.x - 1.5, NEST.y, NEST.z + .2); D.heading = Math.atan2(NEST.x - D.pos.x, NEST.z - D.pos.z);
+}
+function hatchTick(dtR) {
+  if (!G.hatching) return;
+  G.hatchT += dtR; const T = G.hatchT, egg = NEST_EGG.mesh;
+  if (T < 2.6 && egg) { egg.rotation.z = Math.sin(T * (8 + T * 6)) * .18 * Math.min(1, T); if (Math.random() < dtR * 3) popup(pick(['crk', 'tap tap', '!']), NEST.x, NEST.y + 1.2, NEST.z, 'small', .8); }
+  if (T > 2.6 && egg && egg.visible) {
+    egg.visible = false; S.pop(); S.chime(1); FX.hearts(NEST.x, NEST.y + 1.4, NEST.z); for (let k = 0; k < 24; k++) FX.sparkle(NEST.x, NEST.y + .5, NEST.z, 1, .95, .6);
+    BABY.root.visible = true; popup('peep!', NEST.x, NEST.y + 1.6, NEST.z, 'big', 1.6); say('yay', { prio: 9, rate: 1.8 }); showBanner('IT HATCHED!', true); S.jingle();
+  }
+  if (BABY && BABY.root.visible) {
+    BABY.root.position.set(NEST.x, NEST.y + .3 + Math.abs(Math.sin(T * 6)) * .18, NEST.z);
+    BABY.root.rotation.y = Math.sin(T * 1.7) * .9;
+  }
+}
+function hideBaby() { if (BABY) BABY.root.visible = false; G.hatching = false; }
 
 /* =====================================================================
    6_main: input, loop, sequencing, tuning rack
@@ -4979,6 +5504,7 @@ function tick(dtR) {
     G.dusk = G.dayT > G.dayLen * .78 && G.dayT <= G.dayLen; G.night = G.dayT > G.dayLen;
     if (G.dusk && !wasDusk) { hint('dusk'); showBanner('SUNSET!', true); S.sting(); }
     updateDodo(dt);
+    if (G.mode === 'play') updateWife(dt);
     for (const r of rexes) updateRex(r, dt);
     if (G.mode === 'play') updateTigers(dt);
   } else if (G.mode === 'intro') {
@@ -4994,7 +5520,8 @@ function tick(dtR) {
   } else if (G.mode === 'dying') {
     G.deathT += dtR; D.deadT += dt;
     const T = G.deathT, ev = G.deathEv || (G.deathEv = {}), once = k => ev[k] ? false : (ev[k] = true);
-    const END = G.deathKind === 'eaten' ? 4.7 : G.deathKind === 'tiger' ? 3.9 : 3.5;
+    const END = G.deathKind === 'eaten' ? 4.7 : G.deathKind === 'tiger' ? 3.9 : G.deathKind === 'wife' ? 4.2 : 3.5;
+    if (G.deathKind === 'wife' || G.deathKind === 'egg') wifeDyingTick(T, dtR);
     if (G.killer) {
       /* the T-rex: bite, lift, thrash, toss, catch, gulp, burp */
       const r = G.killer, m = rexMouth(r);
@@ -5036,6 +5563,7 @@ function tick(dtR) {
   } else if (G.mode === 'daycard') {
     G.dayCardT += dtR;
     if (Math.random() < dtR * 1.5) popup('z', D.pos.x + .4, D.y + 1.4, D.pos.z, 'small blue', 1.6, 1);
+    hatchTick(dtR);
   }
   if (G.mode !== 'dying' && G.mode !== 'dead') { DR.root.visible = true; DR.root.rotation.z = 0; DR.root.rotation.x = 0; }
 
@@ -5053,6 +5581,7 @@ function tick(dtR) {
     animDodo(DR, D, dt, t);
     for (const r of rexes) if (r.active) animRex(r, dt, t);
     for (const tg of tigers) animTiger(tg, dt, t);
+    animWife(dt, t);
   }
   // ground helpers (control ring, push arrow, snack telegraph)
   const showRing = G.mode === 'play';
@@ -5083,7 +5612,7 @@ function tick(dtR) {
   updateAudio(dtR);
 }
 frame();
-window.__dodo = { G, D, rexes, RUN, TUN, butterflies, crystals, rocks, groundH, A, RAW, S, say, newRun, kill, input, bb: berryBushes, bushes, tigers, Q, shinies, quota, NEST, step(n, dt) { for (let i = 0; i < n; i++) tick(dt || 1 / 60); }, QUAL, cam: camera, DR, render: () => { renderer.render(scene, camera); if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); } }, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, progs: renderer.info.programs.length }) };
+window.__dodo = { scene, trees, W, get WIFE_HOOKS() { return { wifeOff, killWife }; }, G, D, rexes, RUN, TUN, butterflies, crystals, rocks, groundH, A, RAW, S, say, newRun, kill, input, bb: berryBushes, bushes, tigers, Q, shinies, quota, NEST, step(n, dt) { for (let i = 0; i < n; i++) tick(dt || 1 / 60); }, QUAL, cam: camera, DR, render: () => { renderer.render(scene, camera); if (G.mode === 'dying' && !G.captured && G.deathT >= G.captureAt) { G.captured = true; capturePhoto(); } }, info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, geos: renderer.info.memory.geometries, progs: renderer.info.programs.length }) };
 
 })();
 </script>
