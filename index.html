@@ -333,6 +333,7 @@ button.pill{font-family:var(--ui);font-weight:900;font-size:15px;color:var(--ink
 button.pill:hover{transform:translate(-1px,-1px)}
 button.pill:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 button.pill:focus-visible{outline:3px solid var(--sea);outline-offset:3px}
+#shareBtn{font-size:14px;padding:8px 16px;background:#c8eef5}
 #title #bestLine{font-size:13px;font-weight:900;color:var(--paper);text-shadow:1px 1px 0 var(--ink),-1px -1px 0 var(--ink),1px -1px 0 var(--ink),-1px 1px 0 var(--ink);text-align:center}
 .panel{width:min(560px,100%);display:flex;flex-direction:column;gap:10px;margin:auto 0;transform:rotate(-.4deg)}
 .panel h2{margin:0;font-family:var(--disp);font-weight:400;font-size:34px;line-height:1}
@@ -537,6 +538,7 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     <button class="big" id="startBtn">PLAY</button>
     <div class="menuRow"><button class="pill" id="howBtn">How to play</button><button class="pill" id="setBtn">Settings</button></div>
     <div id="bestLine">No record yet. He has never survived anything.</div>
+    <button class="pill" id="shareBtn"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;vertical-align:-2px;margin-right:6px"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="#24170e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none" stroke="#24170e" stroke-width="2.6" stroke-linecap="round"/></svg><span>Share with a friend</span></button>
   </nav>
 </div>
 
@@ -607,7 +609,7 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
     <div class="cardKick">THE EGG HATCHED!</div>
     <div class="cardTxt" id="winTxt"></div>
     <div class="nextBox" id="winStats"></div>
-    <div class="btnRow" style="justify-content:center"><button class="big" id="winAgain">Play again</button><button class="ghost" id="winMenu">Main menu</button></div>
+    <div class="btnRow" style="justify-content:center"><button class="big" id="winAgain">Play again</button><button class="ghost" id="winShare">Share</button><button class="ghost" id="winMenu">Main menu</button></div>
   </div>
 </div>
 
@@ -626,7 +628,7 @@ body.cine #pauseBtn,body.cine #muteBtn{opacity:0;pointer-events:none}
         <div class="st"><div class="n" id="dNear">0</div><div class="l">Near misses</div></div>
       </div>
       <div id="deathQuip"></div>
-      <div class="btnRow"><button class="big" id="againBtn">Try again</button><button class="ghost" id="deathMenuBtn">Main menu</button><span class="hint kb">OR PRESS R</span></div>
+      <div class="btnRow"><button class="big" id="againBtn">Try again</button><button class="ghost" id="shareDeathBtn">Share</button><button class="ghost" id="deathMenuBtn">Main menu</button><span class="hint kb">OR PRESS R</span></div>
     </div>
   </div>
 </div>
@@ -2181,8 +2183,11 @@ function rexMouth(r) { r.rig.P.snout.getWorldPosition(_rm); return _rm; }
 const A = { on: false, muted: false, lv: { calm: 0, tens: 0, chase: 0 }, clips: {}, notes: {}, night: 0, surf: .3, shorePan: 0, meadow: 0, tOff: 0 };
 const DSR = 24000;
 /* player volume settings (v0.11): 1 = the designed mix. Saved per device. */
-const VOL = { master: 1, music: 1, sfx: 1, amb: 1 };
-try { Object.assign(VOL, JSON.parse(localStorage.getItem('dodo_vol') || '{}')); } catch (e) { }
+const VOL = { master: .5, music: 1, sfx: 1, amb: 1 };   // v0.17: starts at 50% (full volume was far too loud on phones)
+try {
+  Object.assign(VOL, JSON.parse(localStorage.getItem('dodo_vol') || '{}'));
+  if (!localStorage.getItem('dodo_vol17')) { VOL.master = Math.min(VOL.master, .5); localStorage.setItem('dodo_vol17', '1'); localStorage.setItem('dodo_vol', JSON.stringify(VOL)); }   // one-time: existing players drop to 50% too
+} catch (e) { }
 const MIX = { master: .9, music: .5, sfx: .95, amb: .7 };
 function applyVolume() {
   if (!A.on) return; const t = aNow();
@@ -4177,6 +4182,7 @@ function showDeath() {
   $('deathQuip').textContent = (rec && G.totalTime > 20 ? 'New personal best! ' : '') + pick(QUIPS);
   if (G.photo) $('deathPhoto').style.backgroundImage = 'url(' + G.photo + ')';
   $('death').hidden = false; $('againBtn').focus();
+  prepDeathShare();   // v0.17: build the shareable death picture now, so Share opens instantly
 }
 function capturePhoto() {
   try {
@@ -5933,6 +5939,90 @@ function catVsRexTick(t, dt) {
     }
   }
 }
+
+/* =====================================================================
+   5i_share (v0.17): share buttons.
+   - Main menu: "Share with a friend" shares the link.
+   - Death card: shares a picture of the death polaroid (cause of death + stats + logo + link). The cause-of-death
+     line is the thing people screenshot, so we hand them a ready-made one.
+   - Win card: shares a brag line + link.
+   Uses the phone's own share sheet (Messages, WhatsApp, Instagram...). Where that doesn't exist (most desktop
+   browsers) it copies the link instead and the button says so.
+   The death picture is built the moment the card appears, because iPhones only allow the share sheet to open
+   straight away from a tap (not after waiting for an image to be drawn).
+   ===================================================================== */
+const SHARE_URL = /github\.io$/.test(location.hostname) ? location.origin + location.pathname.replace(/index\.html$/, '') : 'https://az-build.github.io/save-the-dodo/';
+const SHARE = { file: null, text: '' };
+
+function wrapLines(x, text, maxW) {
+  const words = String(text).split(/\s+/), lines = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (x.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur); return lines;
+}
+function loadImg(src) { return new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+
+async function buildDeathCard() {
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), INK = '#24170e';
+  try { await document.fonts.ready; } catch (e) { }
+  // sea-blue background with soft light rays
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#2a93b5'); bg.addColorStop(1, '#123a44'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  x.globalAlpha = .08; x.fillStyle = '#fff'; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(W / 2, -200); x.lineTo(k * 190 - 100, H); x.lineTo(k * 190 - 10, H); x.closePath(); x.fill(); } x.globalAlpha = 1;
+  // the polaroid
+  const photo = await loadImg(G.photo), pw = 800, ph = 600, px = (W - pw) / 2, py = 130;
+  x.save(); x.translate(W / 2, py + 400); x.rotate(-.045); x.translate(-W / 2, -(py + 400));
+  x.fillStyle = INK; x.fillRect(px - 40 + 14, py - 40 + 14, pw + 80, ph + 250);           // hard shadow
+  x.fillStyle = '#fff'; x.fillRect(px - 40, py - 40, pw + 80, ph + 250);
+  x.lineWidth = 6; x.strokeStyle = INK; x.strokeRect(px - 40, py - 40, pw + 80, ph + 250);
+  if (photo) x.drawImage(photo, px, py, pw, ph); else { x.fillStyle = '#333'; x.fillRect(px, py, pw, ph); }
+  x.fillStyle = '#2a2a2a'; x.textAlign = 'center'; x.textBaseline = 'top';
+  let fs = 50; x.font = `${fs}px "Permanent Marker", "Comic Sans MS", cursive`;
+  let lines = wrapLines(x, D.cause || 'He is dead.', pw - 20);
+  while (lines.length > 3 && fs > 30) { fs -= 4; x.font = `${fs}px "Permanent Marker", "Comic Sans MS", cursive`; lines = wrapLines(x, D.cause || 'He is dead.', pw - 20); }
+  lines.slice(0, 3).forEach((l, i) => x.fillText(l, W / 2, py + ph + 40 + i * fs * 1.15));
+  x.restore();
+  // stats
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.fillStyle = '#fffaf0';
+  x.font = '900 46px Nunito, "Trebuchet MS", sans-serif';
+  const stat = `Survived ${fmt(G.totalTime)} · Day ${G.day} · ${RUN.fart} farts · ${RUN.near} near misses`;
+  x.lineWidth = 8; x.strokeStyle = INK; x.lineJoin = 'round';
+  x.strokeText(stat, W / 2, 1135, W - 80); x.fillText(stat, W / 2, 1135, W - 80);
+  // logo + title + link
+  const logo = await loadImg((document.getElementById('logoArt') || {}).src);
+  const ly = 1170, ls = 120;
+  x.font = '96px "Lilita One", "Arial Black", sans-serif';
+  const tw = x.measureText('SAVE THE DODO!').width, total = ls + 24 + tw, lx = (W - total) / 2;
+  if (logo) { x.save(); x.beginPath(); if (x.roundRect) x.roundRect(lx, ly, ls, ls, 22); else x.rect(lx, ly, ls, ls); x.clip(); x.drawImage(logo, lx, ly, ls, ls); x.restore(); x.lineWidth = 6; x.strokeStyle = INK; if (x.roundRect) { x.beginPath(); x.roundRect(lx, ly, ls, ls, 22); x.stroke(); } }
+  x.textAlign = 'left'; x.lineWidth = 14; x.strokeStyle = INK; x.fillStyle = '#ffc23a';
+  x.strokeText('SAVE THE DODO!', lx + ls + 24, ly + 96); x.fillText('SAVE THE DODO!', lx + ls + 24, ly + 96);
+  x.textAlign = 'center'; x.font = '800 34px Nunito, sans-serif'; x.fillStyle = '#c8eef5';
+  x.fillText(SHARE_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), W / 2, 1335);
+  return new Promise(res => c.toBlob(b => res(b), 'image/jpeg', .9));
+}
+
+/* called by showDeath(): get the picture ready before they tap Share */
+function prepDeathShare() {
+  SHARE.file = null;
+  SHARE.text = `${D.cause} He survived ${fmt(G.totalTime)}. Can you keep him alive longer? ${SHARE_URL}`;
+  buildDeathCard().then(b => { if (b) SHARE.file = new File([b], 'save-the-dodo.jpg', { type: 'image/jpeg' }); }).catch(() => { });
+}
+
+async function doShare(btn, text, file) {
+  const data = { title: 'Save the Dodo', text };
+  const withFile = file && navigator.canShare && navigator.canShare({ files: [file] });
+  try {
+    if (withFile) { await navigator.share(Object.assign({ files: [file] }, data)); return; }
+    if (navigator.share) { await navigator.share({ title: data.title, text: text.replace(SHARE_URL, '').trim(), url: SHARE_URL }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  // no share sheet (most desktops): copy instead
+  let ok = false; try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { }
+  const was = btn.innerHTML; btn.textContent = ok ? 'Link copied!' : SHARE_URL; setTimeout(() => { btn.innerHTML = was; }, 2200);
+}
+
+$('shareBtn').addEventListener('click', () => { S.pop(); doShare($('shareBtn'), `Save the Dodo: you can't control him, you can only try. ${SHARE_URL}`); });
+$('shareDeathBtn').addEventListener('click', () => { S.pop(); doShare($('shareDeathBtn'), SHARE.text, SHARE.file); });
+$('winShare').addEventListener('click', () => { S.pop(); doShare($('winShare'), `The egg hatched! I kept the last two dodos alive for 3 days in Save the Dodo (${fmt(G.totalTime)}). Your turn: ${SHARE_URL}`); });
+window.__dodoShare = { buildDeathCard, SHARE };   // test hook
 
 /* =====================================================================
    6_main: input, loop, sequencing, tuning rack
