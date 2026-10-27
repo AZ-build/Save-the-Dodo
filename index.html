@@ -692,8 +692,8 @@ const TUN = {
   rexSight: { v: 24,   min: 8,  max: 45,  step: 1,   label: 'T-rex eyesight', note: 'Spotting range in the open.' },
   snackLock:{ v: 2.4,  min: .5, max: 6,   step: .1,  label: 'Snack lock time', note: 'Seconds he spends chewing.' },
   hunger:   { v: .75,  min: 0,  max: 3,   step: .05, label: 'Hunger rate', note: 'Belly % lost per second.' },
-  distract: { v: .24,  min: 0,  max: 1,   step: .01, label: 'Distraction chance', note: 'Per second near puddles and butterflies.' },
-  trip:     { v: .04,  min: 0,  max: .4,  step: .005,label: 'Trip chance', note: 'Per second. Way up when panicking.' },
+  distract: { v: .16,  min: 0,  max: 1,   step: .01, label: 'Distraction chance', note: 'Per second near puddles and butterflies.' },
+  trip:     { v: .02,  min: 0,  max: .4,  step: .005,label: 'Trip chance', note: 'Per second. Way up when panicking.' },
   fart:     { v: 1,    min: 0,  max: 3,   step: .05, label: 'Fart frequency', note: 'Each one is a scent trail.' },
   wipeout:  { v: .2,   min: 0,  max: .8,  step: .01, label: 'Jump wipeout chance', note: 'Base odds. Way up at a sprint.' },
   chaseFocus:{ v: 1,   min: .2, max: 3,   step: .05, label: 'Mid-chase distraction (s)', note: 'How long before he remembers the T-rex.' },
@@ -1839,7 +1839,8 @@ function animDodo(R, D, dt, t) {
   R.root.position.set(D.pos.x, D.y, D.pos.z);
   const moving = Math.min(1, sp / 2.6);
   const running = st === 'panic' || st === 'honk';
-  const gait = running ? 'run' : (st === 'wander' || st === 'popout' || st === 'butterfly' ? D.gait : 'waddle');
+  const cr = st === 'wander' ? (D.cruise || 0) : 0;   // v0.19: cruising = a happy skip that turns into a run
+  const gait = running || cr > .8 ? 'run' : cr > .3 ? 'skip' : (st === 'wander' || st === 'popout' || st === 'butterfly' ? D.gait : 'waddle');
   const rate = running ? 2.7 : (gait === 'hop' ? 1.5 : gait === 'drunk' ? 1.7 : 2.1);
   R.walk += dt * (sp * rate + (moving > .05 ? 2 : 0));
   const ph = R.walk * 2.2, w = Math.sin(ph);
@@ -3160,12 +3161,13 @@ function isHunting(r) { return r && (r.state === 'chase' || r.state === 'windup'
 function updateDodo(dt) {
   if (D.dead) { D.deadT += dt; return; }
   if (D.state === 'sleep') { D.vel.multiplyScalar(.9); return; }
+  if (D.state !== 'wander') { D.cruiseT = 0; D.cruise = 0; }
   D.stAge += dt; D.stT -= dt; D.honkCD -= dt; D.nopeCD = (D.nopeCD || 0) - dt; D.refuseT = (D.refuseT || 0) - dt; D.bonkCD = (D.bonkCD || 0) - dt; D.lookT = (D.lookT || 0) - dt; D.tripCD -= dt; D.thoughtT -= dt; D.panicT -= dt; D.notSleepyT -= dt; D.jumpCD -= dt; D.chaseDistCD -= dt; D.landT -= dt;
   const push = readPush(_push), pm = push.lengthSq() > .01;
   D.stumbleT -= dt; D.inspectT -= dt; D.idleT = pm ? 0 : D.idleT + dt;
   // gait of the moment: waddle / drunk / hop / skip / strut
   D.gaitT -= dt;
-  if (D.gaitT <= 0) { D.gaitT = rand(2.5, 5.5); const r = Math.random() * 10, was = D.gait; D.gait = r < 3 ? 'waddle' : r < 5.8 ? 'drunk' : r < 7.3 ? 'hop' : r < 8.8 ? 'skip' : 'strut'; if (D.gait !== was) D.gaitVoice = true; }
+  if (D.gaitT <= 0) { D.gaitT = rand(2.5, 5.5); const r = Math.random() * 10, was = D.gait; D.gait = r < 3.6 ? 'waddle' : r < 5.1 ? 'drunk' : r < 6.4 ? 'hop' : r < 8.6 ? 'skip' : 'strut';   /* v0.19: drunk 28% -> 15% */ if (D.gait !== was) D.gaitVoice = true; }
   // delayed tummy ache from overeating
   if (D.tummyIn > 0) { D.tummyIn -= dt; if (D.tummyIn <= 0) { if (['wander', 'panic', 'hush', 'hide', 'popout', 'butterfly', 'stare'].indexOf(D.state) >= 0) startTummy(); else D.tummyIn = .4; } }
   const space = input.hush || input.touchHush;
@@ -3190,9 +3192,9 @@ function updateDodo(dt) {
   // dusk: home time
   // v0.12: the day ends when it's sunset and BOTH of them are in the nest
   if ((G.dusk || G.night) && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 2.4 && ['wander', 'hush', 'panic', 'hide', 'popout', 'butterfly', 'stare'].indexOf(D.state) >= 0) {
-    if (W.state === 'sit' && Q.delivered >= WIFE.bed) { daySurvived(); return; }
+    if (W.state === 'sit' && Q.delivered >= WIFE.bedN()) { daySurvived(); return; }
     Q.nagT -= dt;
-    if (Q.nagT <= 0 && W.state === 'sit') { const n = WIFE.bed - Q.delivered; Q.nagT = 4; popup(n === 1 ? 'one more shiny first!' : n + ' more shinies first!', NEST.x, NEST.y + 2.4, NEST.z, 'big', 1.6); sayW('hmph', { prio: 3 }); hint('bedShiny'); }   // v0.18: no shinies, no bedtime
+    if (Q.nagT <= 0 && W.state === 'sit') { const n = WIFE.bedN() - Q.delivered; Q.nagT = 4; popup(n === 1 ? 'one more shiny first!' : n + ' more shinies first!', NEST.x, NEST.y + 2.4, NEST.z, 'big', 1.6); sayW('hmph', { prio: 3 }); hint('bedShiny'); }   // v0.18: no shinies, no bedtime
     else if (Q.nagT <= 0) { Q.nagT = 4; popup('where is Doda?!', NEST.x, NEST.y + 2.4, NEST.z, 'big', 1.6); hint('needShiny'); }
   }
   if (!G.dusk && !G.night && hyp(D.pos.x, D.pos.z, NEST.x, NEST.z) < 1.3 && D.notSleepyT <= 0 && G.mode === 'play') { D.notSleepyT = 9; popup('not sleepy', D.pos.x, D.y + 2, D.pos.z, 'small', 1.4); }
@@ -3236,9 +3238,10 @@ function updateDodo(dt) {
         const bf = nearestOf(butterflies, D.pos.x, D.pos.z, 7);
         const cr = nearestOf(pools, D.pos.x, D.pos.z, 8), fb = nearestBrawl(D.pos.x, D.pos.z, 17);
         if (fb && G.time - (D.watchedAt || -99) > 5 && Math.random() < (pm ? .35 : .9) * dt) startWatch(fb);
-        else if (bf && Math.random() < tv('distract') * dt) { setS('butterfly', rand(3.2, 4.8), "He's following a butterfly. Wherever it goes."); D.target = bf; D.lookAt = bf; bf.fleeing = D.stT; RUN.lost++; think('butterfly', 999); hint('butterfly'); say('oohDream', { prio: 2 }); }
-        else if (cr && Math.random() < tv('distract') * dt * 1.1 * (Q.carrying ? .25 : 1)) { if (Q.carrying && Math.random() < .4) dropShiny('dropped it to admire himself in a puddle'); setS('stare', Math.min(6, rand(2.6, 3.6) + hyp(cr.x, cr.z, D.pos.x, D.pos.z) / 2.6), 'He found his reflection. He is not listening.'); D.stareKind = 'pool'; say('oohDream', { prio: 2, rate: 1.1 }); D.target = cr; D.lookAt = cr; RUN.lost++; think('sparkle', 999); popup(pick(['hello, handsome', 'ooh… who is THAT?', '*gasp* gorgeous']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1.3); }
-        else if (D.tripCD <= 0 && D.vel.length() > 2.2 && Math.random() < tv('trip') * dt * (nearestOf(rocks, D.pos.x, D.pos.z, 4) ? 2 : 1) * (Q.carrying ? .3 : 1)) doTrip();
+        else if (bf && Math.random() < tv('distract') * dt * (pm ? .5 : 1)) {   // v0.19: steering = he's (mostly) listening
+ setS('butterfly', rand(3.2, 4.8), "He's following a butterfly. Wherever it goes."); D.target = bf; D.lookAt = bf; bf.fleeing = D.stT; RUN.lost++; think('butterfly', 999); hint('butterfly'); say('oohDream', { prio: 2 }); }
+        else if (cr && Math.random() < tv('distract') * dt * 1.1 * (Q.carrying ? .25 : 1) * (pm ? .5 : 1)) { if (Q.carrying && Math.random() < .4) dropShiny('dropped it to admire himself in a puddle'); setS('stare', Math.min(6, rand(2.6, 3.6) + hyp(cr.x, cr.z, D.pos.x, D.pos.z) / 2.6), 'He found his reflection. He is not listening.'); D.stareKind = 'pool'; say('oohDream', { prio: 2, rate: 1.1 }); D.target = cr; D.lookAt = cr; RUN.lost++; think('sparkle', 999); popup(pick(['hello, handsome', 'ooh… who is THAT?', '*gasp* gorgeous']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1.3); }
+        else if (D.tripCD <= 0 && D.vel.length() > 2.2 && Math.random() < tv('trip') * dt * (nearestOf(rocks, D.pos.x, D.pos.z, 4) ? 1.6 : 1) * (Q.carrying ? .3 : 1) * (D.cruise > .2 ? .4 : 1)) doTrip();
       }
     }
   }
@@ -3254,7 +3257,7 @@ function updateDodo(dt) {
       if (b) { startSnack(b, hunted); popup(hunted ? 'ooh! (mid-chase?!)' : 'ooh!', D.pos.x, D.y + 2, D.pos.z, 'nom', 1); }
       else if (bf && Math.random() < tv('distract') * .9 * dt) chaseDistract('butterfly', bf);
       else if (cr && Math.random() < tv('distract') * .9 * dt * (Q.carrying ? .4 : 1)) chaseDistract('stare', cr);
-      else if (D.tripCD <= 0 && Math.random() < tv('trip') * 1.9 * dt * (Q.carrying ? .5 : 1)) doTrip();
+      else if (D.tripCD <= 0 && Math.random() < tv('trip') * 1.4 * dt * (Q.carrying ? .5 : 1)) doTrip();
     }
   }
   if (st === 'hush' || st === 'hide') {
@@ -3330,13 +3333,25 @@ function updateDodo(dt) {
           else {
             // negotiation by SPEED, never direction: he drags his feet away from food, hurries toward it
             const al = (push.x * fx + push.z * fz) / (fl * Math.max(.01, push.length()));
-            spdK = al > .3 ? 1.18 : (al < -.2 ? .66 : .85); D.lookAt = b; D.lookT = .3; if (spdK < .8) showCtrl = .6;
+            spdK = al > .3 ? 1.18 : (al < -.2 ? .8 : .92); D.lookAt = b; D.lookT = .3; if (spdK < .8) showCtrl = .6;
             if (al < -.2 && (D.dragNagT = (D.dragNagT || 0) - dt) <= 0) { D.dragNagT = 3.2; popup(pick(['but… berries', 'wrong way…', '*drags feet*']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1.1); say('whine', { prio: 2, vol: .55 }); think('berry', 1.4); }
           }
         }
       }
       if (G.night) { spdK *= .92; if (!pm) ctrl = .8; }
       if (pm) { ctrl = 1; iDir = null; }   // you steer: he goes where you push. Always.
+      // v0.19 CRUISE: keep pushing the same way and he warms up into a happy skip, then a proper run.
+      // Starts after ~1.5s of a steady direction, full speed by ~3s. A sharp turn, letting go, or anything
+      // that interrupts him (snack, trip, bonk...) cools it off. Long trips across the island stop being a slog.
+      if (pm && spdK >= .92) {
+        const a = Math.atan2(push.x, push.z);
+        if (D.cruiseA == null || Math.abs(angDiff(D.cruiseA, a)) > .75) { D.cruiseA = a; D.cruiseT = Math.min(D.cruiseT || 0, .6); }
+        else { D.cruiseA += angDiff(D.cruiseA, a) * Math.min(1, dt * 2.5); D.cruiseT = (D.cruiseT || 0) + dt; }
+      } else D.cruiseT = Math.max(0, (D.cruiseT || 0) - dt * 3);
+      D.cruise = clamp(((D.cruiseT || 0) - 1.5) / 1.5, 0, 1);
+      if (D.cruise > 0) { spdK *= 1 + .42 * D.cruise; maxSpd = 5.1 + 1.4 * D.cruise; }
+      if (D.cruise >= 1 && !D.cruiseSaid) { D.cruiseSaid = true; if (Math.random() < .5) { popup(pick(['wheee!', 'zoom!', 'look at me go!']), D.pos.x, D.y + 2.1, D.pos.z, 'small', 1); say('wheee', { prio: 2 }); } }
+      if (D.cruise < .3) D.cruiseSaid = false;
       D.idleThinkT -= dt;
       if (D.idleThinkT <= 0) { D.idleThinkT = rand(7, 14); if (!D.thought || D.thoughtT <= 0) think(pick(['berry', 'question', 'note', 'butterfly', 'dots']), 1.6); }
       break;
@@ -3501,14 +3516,14 @@ function updateDodo(dt) {
   _want.multiplyScalar(spdK);
   if (D.state === 'wander' || D.state === 'popout' || D.state === 'panic') {
     const len = _want.length();
-    if (len > .6 && D.state !== 'panic') {
+    if (len > .6 && D.state !== 'panic' && !(D.cruise > .3)) {
       // gaits change his SPEED and his body language, and only nudge his line a few degrees
-      if (D.gait === 'drunk') { const sw = Math.sin(G.time * 2.6 + D.drunkPh) * .13, c = Math.cos(sw), sn = Math.sin(sw), wx = _want.x, wz = _want.z; _want.x = wx * c + wz * sn; _want.z = -wx * sn + wz * c; if (D.stumbleT <= 0 && Math.random() < .12 * dt * (Q.carrying ? .5 : 1)) stumble(); }
-      else if (D.gait === 'hop') _want.multiplyScalar(.62 + .6 * Math.max(0, Math.sin(G.time * 6.5)));
+      if (D.gait === 'drunk') { const sw = Math.sin(G.time * 2.6 + D.drunkPh) * .07, c = Math.cos(sw), sn = Math.sin(sw), wx = _want.x, wz = _want.z; _want.x = wx * c + wz * sn; _want.z = -wx * sn + wz * c; if (D.stumbleT <= 0 && Math.random() < .05 * dt * (Q.carrying ? .5 : 1)) stumble(); }
+      else if (D.gait === 'hop') _want.multiplyScalar(.82 + .36 * Math.max(0, Math.sin(G.time * 6.5)));
       else if (D.gait === 'skip') _want.multiplyScalar(1.08);
-      else if (D.gait === 'strut') _want.multiplyScalar(.9);
-      if (D.gait !== 'drunk' && D.stumbleT <= 0 && Math.random() < .03 * dt * (Q.carrying ? .5 : 1)) stumble();
-    } else if (len > .6 && D.stumbleT <= 0 && Math.random() < .05 * dt) stumble();
+      else if (D.gait === 'strut') _want.multiplyScalar(.96);
+      if (D.gait !== 'drunk' && D.stumbleT <= 0 && Math.random() < .012 * dt * (Q.carrying ? .5 : 1)) stumble();
+    } else if (len > .6 && D.stumbleT <= 0 && Math.random() < .025 * dt) stumble();
   }
   if (D.hunger > 92) maxSpd *= .8;
   if (_want.length() > maxSpd) _want.setLength(maxSpd);
@@ -3742,9 +3757,10 @@ function finishSnack(b) {
   if (was) realize();
 }
 function stumble() {
-  D.stumbleT = .6; D.stumbleSide = Math.random() < .5 ? -1 : 1;
+  if (G.time - (D.stumbledAt || -99) < 6 || D.cruise > .5) return;   // v0.19: at most one every 6s, never when he's cruising along happily
+  D.stumbledAt = G.time; D.stumbleT = .6; D.stumbleSide = Math.random() < .5 ? -1 : 1;
   const c = Math.cos(D.heading), sn = Math.sin(D.heading);
-  D.vel.x += c * D.stumbleSide * 1.8; D.vel.z += -sn * D.stumbleSide * 1.8;
+  D.vel.x += c * D.stumbleSide * 1.1; D.vel.z += -sn * D.stumbleSide * 1.1;
   const w = D.gait === 'drunk' && Math.random() < .45 ? 'hic!' : pick(['whoa', 'woop', 'hic!', 'whoopsie', 'eep', 'whoa']);
   popup(w, D.pos.x, D.y + 2, D.pos.z, 'small', .9);
   say({ whoa: 'whoa', woop: 'woop', 'hic!': 'hic', whoopsie: 'whoopsie', eep: 'eep' }[w], { prio: 2 });
@@ -3766,7 +3782,8 @@ function pickCurio() {
 }
 function doTrip() {
   if (Q.carrying) dropShiny('dropped it!');
-  setS('trip', 1.15, 'Tripped over nothing.'); D.tripCD = 2.6; RUN.trip++; RUN.lost++;
+  setS('trip', 1.15, 'Tripped over nothing.'); D.tripCD = 7;   // v0.19: was 2.6 (trips came in bunches)
+  RUN.trip++; RUN.lost++;
   makeNoise(D.pos.x, D.pos.z, 4.5, 0xffffff, 'trip');
   S.trip(); setTimeout(() => say('oof', { prio: 3 }), 420); popup(pick(['OOF', 'BONK', 'SPLAT']), D.pos.x, D.y + 1.5, D.pos.z, '', 1); FX.dust(D.pos.x, D.y, D.pos.z, 8); FX.feathers(D.pos.x, D.y + .6, D.pos.z, 6);
   locoScale(1.15); think('stars', 1.3);
@@ -4125,8 +4142,8 @@ const HINTS = {
   hush: 'Hold SPACE outside a bush to freeze him in place.',
   beakFull: 'His beak is full of shiny, so he can\'t eat. Get it home, or he drops it when he\'s starving.',
   shiny: 'Got one! Take it to Doda at the nest. (He can\'t eat with a full beak.)',
-  bedShiny: 'Doda needs 3 shinies a day before she\'ll settle down for the night. The counter is next to her bars (top-left).',
-  bedReady: 'That\'s 3! Doda is happy. Get them both home by sunset. (More shinies still keep her from getting bored.)',
+  bedShiny: 'Doda needs her shinies before she\'ll settle down for the night (2 today, more tomorrow). The counter is next to her bars (top-left).',
+  bedReady: 'That\'s enough! Doda is happy. Get them both home by sunset. (More shinies still keep her from getting bored.)',
   needShiny: "He won't sleep without Doda. Go and get her: carry a shiny past her and she follows.",
   berryCarry: "He picked a berry for Doda. Get it to her before he gets peckish and eats it himself.",
   dodaBush: 'PURPLE berries are Doda\'s. Walk him into the bush to pick her some. (RED ones are his, and he WILL stop to eat them.)',
@@ -4332,7 +4349,7 @@ function updateHUD(dtR) {
   $('sunDot').setAttribute('cx', (50 + Math.cos(ang) * 44).toFixed(1)); $('sunDot').setAttribute('cy', (40 - Math.sin(ang) * 34).toFixed(1));
   $('sunDot').setAttribute('fill', G.night ? '#c8d0ff' : (G.dusk ? '#ff8a4c' : '#ffc23a'));
   $('dayLbl').textContent = 'DAY ' + G.day;
-  { const nb = Math.min(Q.delivered, WIFE.bed), bt = nb + '/' + WIFE.bed, be = $('dBed'); if (be.textContent !== bt) { be.textContent = bt; be.classList.toggle('done', nb >= WIFE.bed); be.classList.remove('pop'); void be.offsetWidth; be.classList.add('pop'); }
+  { const nb = Math.min(Q.delivered, WIFE.bedN()), bt = nb + '/' + WIFE.bedN(), be = $('dBed'); if (be.textContent !== bt) { be.textContent = bt; be.classList.toggle('done', nb >= WIFE.bedN()); be.classList.remove('pop'); void be.offsetWidth; be.classList.add('pop'); }
     $('dAttn').style.width = Math.max(3, W.attn) + '%'; $('dBelly').style.width = Math.max(3, W.belly) + '%';
     $('dAttn').parentNode.classList.toggle('low', W.attn < 30); $('dBelly').parentNode.classList.toggle('low', W.belly < 30);
     const cold = wifeOff(); $('dEgg').classList.toggle('cold', cold); $('dEgg').style.setProperty('--w', (W.warm / 100).toFixed(2));
@@ -5161,7 +5178,7 @@ const li = (k, b, s, cls) => `<li${cls ? ' class="' + cls + '"' : ''}>${gi(k)}<s
 
 /* the four jobs. Same words everywhere: menu, intro card, how-to-play */
 function goalsHTML(day) {
-  return li('heart', 'Keep Doda on the egg', 'Bring her 3 shinies a day. No shinies, no bedtime.') +
+  return li('heart', 'Keep Doda on the egg', `Bring her ${[2, 3, 4][Math.min(2, (day || 1) - 1)]} shinies today. No shinies, no bedtime.`) +
     li('berry', 'Feed them both', 'Red berries are his. Purple are hers: walk him into a purple bush to pick one.') +
     li('rex', 'Stay out of sight', 'Trees and bushes block its view.', 'rexLine') +
     li('sun', 'Both in the nest by sunset', 'Survive 3 days and the egg hatches.');
@@ -5176,7 +5193,7 @@ function showMission(day) {
     const twist = day === 2 ? li('rex', 'The T-rex is faster now', 'And it can smell his farts.', 'rexLine')
       : day === 3 ? li('rex', 'There are two T-rexes', 'The new one is small, fast, and turns better.', 'rexLine')
         : li('warn', 'Everything is faster', 'He is not.', 'rexLine');
-    html = '<div class="mGoal">' + (day === 3 ? 'Last day. The egg is wobbling.' : 'Same job. Worse island.') + '</div><ul class="mList">' + li('heart', 'Keep Doda on the egg', '3 shinies before bed. She gets bored even faster today.') + twist + li('sun', 'Both in the nest by sunset', day === 3 ? 'Then it hatches.' : '') + '</ul>';
+    html = '<div class="mGoal">' + (day === 3 ? 'Last day. The egg is wobbling.' : 'Same job. Worse island.') + '</div><ul class="mList">' + li('heart', 'Keep Doda on the egg', `${day === 3 ? 4 : 3} shinies before bed. She gets bored even faster today.`) + twist + li('sun', 'Both in the nest by sunset', day === 3 ? 'Then it hatches.' : '') + '</ul>';
   }
   m.innerHTML = html; m.classList.remove('fly'); m.hidden = false;
 }
@@ -5200,13 +5217,13 @@ function currentObjective() {
     if (W.state === 'follow') return ['heart', 'She is following! Lead her home', 1];
     return Q.carrying ? ['heart', 'Walk past Doda. She will follow it home', 1] : ['shiny', 'Doda left! Grab a shiny to lure her home', 1];
   }
-  if ((G.night || G.dusk) && Q.delivered < WIFE.bed) { const n = WIFE.bed - Q.delivered; return [Q.carrying ? 'nest' : 'shiny', (G.night ? 'Dark!' : 'Sunset!') + (Q.carrying ? ' Take that shiny home' : ` Doda wants ${n} more shin${n === 1 ? 'y' : 'ies'} before bed`), 1]; }
+  if ((G.night || G.dusk) && Q.delivered < WIFE.bedN()) { const n = WIFE.bedN() - Q.delivered; return [Q.carrying ? 'nest' : 'shiny', (G.night ? 'Dark!' : 'Sunset!') + (Q.carrying ? ' Take that shiny home' : ` Doda wants ${n} more shin${n === 1 ? 'y' : 'ies'} before bed`), 1]; }
   if (G.night || G.dusk) return ['nest', (G.night ? 'Dark!' : 'Sunset!') + ' Get him home to bed', 1];
   if (D.hunger > 72) return Q.carrying ? ['nest', 'He is starving! Deliver that, then eat', D.hunger > 88] : ['berry', "He's starving. Find a RED berry bush", D.hunger > 88];
   if (Q.carrying) return [berry ? 'berryD' : 'heart', berry ? "Bring the berry to Doda (don't let him eat it)" : 'Bring the shiny to Doda', 0];
   if (W.belly < 40) return ['berryD', 'Doda is hungry: walk him into a PURPLE bush', W.belly < 20];
   if (W.attn < 45) return ['shiny', 'Doda is getting bored: find a shiny', W.attn < 20];
-  if (Q.delivered < WIFE.bed) return ['shiny', `Bring Doda shinies (${Q.delivered}/${WIFE.bed} before bedtime)`, 0];
+  if (Q.delivered < WIFE.bedN()) return ['shiny', `Bring Doda shinies (${Q.delivered}/${WIFE.bedN()} before bedtime)`, 0];
   return ['shiny', W.attn < 80 ? 'Find shinies for Doda' : 'Doda is happy. Stock up on shinies', 0];
 }
 const OBJ = { sig: '', kind: '', pingT: 0 };
@@ -5331,7 +5348,7 @@ const WIFE = {
   attnDrain: () => [1.0, 1.2, 1.4][Math.min(2, G.day - 1)] * (G.night ? 1.3 : 1),
   bellyDrain: () => [.45, .55, .65][Math.min(2, G.day - 1)],
   SHINY: 50, BERRY: 45, COOL: 1.4, WARM: 3,
-  bed: 3   // v0.18: she won't settle down for the night until she's had this many shinies TODAY (one was enough before)
+  bedN: () => [2, 3, 4][Math.min(2, G.day - 1)]   // shinies she needs TODAY before she'll settle for the night (v0.18 rule; v0.19: 2 / 3 / 4 by day)
 };
 const wifeOff = () => W.state !== 'sit' && W.state !== 'sleep' && W.state !== 'dead';
 const wifeExposed = () => wifeOff() && !inSanct(W.x, W.z);
@@ -5439,8 +5456,8 @@ function giveToWife() {
     it.mesh.position.set(NEST.x + Math.cos(a) * (1.0 + (i % 2) * .2), NEST.y + .42, NEST.z + Math.sin(a) * (1.0 + (i % 2) * .2)); it.mesh.scale.set(.9, .7, .9);
     scene.add(it.mesh); nestPile.push(it.mesh); if (nestPile.length > 10) scene.remove(nestPile.shift());
     W.attn = Math.min(100, W.attn + WIFE.SHINY); Q.delivered++; RUN.shiny = (RUN.shiny || 0) + 1;
-    if (Q.delivered === WIFE.bed) { setTimeout(() => { if (G.mode === 'play') { wPop('ready for bed ♥', 'big', 1.8); showBanner('DODA IS HAPPY!', true, true); } }, 900); hint('bedReady'); }
-    else if (Q.delivered < WIFE.bed) hint('bedShiny');
+    if (Q.delivered === WIFE.bedN()) { setTimeout(() => { if (G.mode === 'play') { wPop('ready for bed ♥', 'big', 1.8); showBanner('DODA IS HAPPY!', true, true); } }, 900); hint('bedReady'); }
+    else if (Q.delivered < WIFE.bedN()) hint('bedShiny');
     Q.respawn.push(G.time + rand(12, 20));
     wPop(pick(['SHINY! ♥', 'for ME?!', 'ooh ♥ ♥', 'he remembered!']), 'big', 1.5); sayW(pick(['yay', 'ooh']), { prio: 5 }); setTimeout(() => sayW(pick(['mwah', 'aww', 'trill']), { prio: 5 }), 700);
     W.react = { kind: 'delight', t: 0, dur: 1.8 };
